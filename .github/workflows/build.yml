@@ -57,33 +57,25 @@ jobs:
             -destination "platform=iOS Simulator,name=$device" \
             -derivedDataPath build
 
-      - name: Test on Simulator
+      - name: Test on Simulator (unit + UI tests)
         run: |
+          rm -rf build/TestResults.xcresult
           xcodebuild test \
             -scheme Chef \
             -destination "platform=iOS Simulator,name=$device" \
-            -derivedDataPath build
+            -derivedDataPath build \
+            -resultBundlePath build/TestResults.xcresult
 
-      - name: Screenshot the running app
+      - name: Export screenshots from the UI test result bundle
         run: |
-          xcrun simctl boot "$device" || true
-          xcrun simctl bootstatus "$device" -b
-          APP_PATH=$(find build/Build/Products -maxdepth 3 -name "Chef.app" -path "*iphonesimulator*" | head -n1)
-          echo "App at: $APP_PATH"
-          xcrun simctl install "$device" "$APP_PATH"
-          xcrun simctl launch "$device" com.chef.app
-          sleep 4
           mkdir -p screenshots
-          xcrun simctl io "$device" screenshot screenshots/hoje.png
-          xcrun simctl shutdown "$device" || true
-          # Nota: "xcrun simctl openurl" para navegar a outras abas via deep
-          # link (chef://scan, chef://dieta) dispara um alerta de sistema
-          # "Open in Chef?" que exige um toque — sem XCUITest não dá pra
-          # confirmar esse alerta de forma automatizada, então isso não
-          # captura a tela real. Removido até termos um alvo de UI test.
+          xcrun xcresulttool export attachments \
+            --path build/TestResults.xcresult \
+            --output-path screenshots
+          ls -la screenshots
 
-      - name: Upload screenshot
+      - name: Upload screenshots
         uses: actions/upload-artifact@v4
         with:
           name: chef-screenshots
-          path: screenshots/*.png
+          path: screenshots/**

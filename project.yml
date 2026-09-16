@@ -53,13 +53,26 @@ targets:
         SWIFT_VERSION: 6.0
         GENERATE_INFOPLIST_FILE: YES
 
+  ChefUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: ChefApp/UITests
+    dependencies:
+      - target: Chef
+    settings:
+      base:
+        SWIFT_VERSION: 6.0
+        GENERATE_INFOPLIST_FILE: YES
+
 schemes:
   Chef:
     build:
       targets:
         Chef: all
         ChefTests: [test]
+        ChefUITests: [test]
     test:
-      targets: [ChefTests]
+      targets: [ChefTests, ChefUITests]
     run:
       config: Debug
