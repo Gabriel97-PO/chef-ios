@@ -72,7 +72,7 @@ struct ScanResultSheet: View {
             VStack(alignment: .leading, spacing: 20) {
                 Label("Tabela identificada", systemImage: "checkmark.circle.fill")
                     .font(.caption.weight(.semibold))
-                    .foregroundStyle(.chefSuccess)
+                    .foregroundStyle(Color.chefSuccess)
 
                 TextField("Nome do alimento", text: $name)
                     .font(.title2.weight(.black))
