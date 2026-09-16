@@ -145,3 +145,24 @@ final class SDFixedMeal {
         FixedMeal(id: id, name: name, items: items, createdAt: createdAt)
     }
 }
+
+/// Uma dieta importada e aplicada (seção 28/38 do plano de migração).
+/// Versões antigas nunca são apagadas — só deixam de ser `active`.
+@Model
+final class SDDietVersion {
+    @Attribute(.unique) var id: String
+    var label: String
+    var source: DietVersionSource
+    var document: CnpDocument
+    var active: Bool
+    var importedAt: Date
+
+    init(id: String = UUID().uuidString, label: String, source: DietVersionSource, document: CnpDocument, active: Bool, importedAt: Date = Date()) {
+        self.id = id
+        self.label = label
+        self.source = source
+        self.document = document
+        self.active = active
+        self.importedAt = importedAt
+    }
+}

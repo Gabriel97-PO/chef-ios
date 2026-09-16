@@ -15,13 +15,23 @@ struct DietView: View {
     @Query(sort: \SDFixedMeal.name) private var fixedMeals: [SDFixedMeal]
     @Query(sort: \SDRecipe.name) private var recipes: [SDRecipe]
     @Query(sort: \SDFood.name) private var foods: [SDFood]
+    @Query(sort: \SDDietVersion.importedAt, order: .reverse) private var dietVersions: [SDDietVersion]
 
     @State private var tab: DietTab = .meta
+    @State private var showImport = false
+
+    private var activeDiet: SDDietVersion? { dietVersions.first { $0.active } }
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
+                    if let activeDiet {
+                        Text("Dieta ativa: **\(activeDiet.label)** · importada em \(activeDiet.importedAt.formatted(date: .abbreviated, time: .omitted))")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
                     Picker("Aba", selection: $tab) {
                         ForEach(DietTab.allCases, id: \.self) { Text($0.rawValue).tag($0) }
                     }
@@ -41,6 +51,14 @@ struct DietView: View {
                 .padding()
             }
             .navigationTitle("Dieta")
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    Button("Importar") { showImport = true }
+                }
+            }
+            .sheet(isPresented: $showImport) {
+                DietImportView()
+            }
         }
     }
 }

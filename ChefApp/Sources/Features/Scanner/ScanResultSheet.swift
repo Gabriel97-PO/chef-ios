@@ -12,6 +12,9 @@ struct ScanResultSheet: View {
 
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
+    @Query private var profiles: [SDUserProfile]
+    @Query private var allMeals: [SDMealEntry]
+    @Query(sort: \SDDietVersion.importedAt, order: .reverse) private var dietVersions: [SDDietVersion]
     @State private var showSlotPicker = false
 
     @State private var name: String
@@ -26,9 +29,6 @@ struct ScanResultSheet: View {
     @State private var quantity: Double
 
     private var confidenceByField: [String: Double?]
-
-    private let demoGoal = DailyGoal(calories: 2100, protein: 170)
-    private let demoConsumed = NutritionFacts(calories: 912, protein: 34.2, carbs: 40, fat: 20)
 
     init(scanResult: ScanResult) {
         self.scanResult = scanResult
@@ -65,12 +65,35 @@ struct ScanResultSheet: View {
         )
     }
 
+    private var goal: DailyGoal {
+        profiles.first?.goal ?? DailyGoal(calories: 2100, protein: 170)
+    }
+
+    private var consumedToday: NutritionFacts {
+        let today = DateKey.today()
+        return NutritionEngine.sumMeals(allMeals.filter { $0.date == today }.map(\.asMealEntry))
+    }
+
     private var fit: FoodFitResult {
-        NutritionEngine.analyzeFoodFit(food: previewNutrition, dailyGoal: demoGoal, consumedToday: demoConsumed)
+        NutritionEngine.analyzeFoodFit(food: previewNutrition, dailyGoal: goal, consumedToday: consumedToday)
     }
 
     private var missingRequiredFields: Bool {
         calories == nil || protein == nil
+    }
+
+    /// Correspondência com a dieta prescrita (seção 18/39): só afirma
+    /// "produto corresponde" quando há um item com nome equivalente na
+    /// dieta ativa — nunca assume que uma diferença de produto é uma
+    /// substituição válida.
+    private var prescribedMatch: CnpFoodItem? {
+        guard let active = dietVersions.first(where: { $0.active }) else { return nil }
+        return CNPMatching.findPrescribedMatch(in: active.document, foodName: name)
+    }
+
+    private var differsFromPrescribed: Bool {
+        guard let active = dietVersions.first(where: { $0.active }) else { return false }
+        return CNPMatching.hasPrescribedFoods(active.document) && prescribedMatch == nil
     }
 
     var body: some View {
@@ -93,6 +116,31 @@ struct ScanResultSheet: View {
                         .foregroundStyle(.secondary)
                 }
                 .font(.subheadline)
+
+                if let prescribedMatch {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("✓ Produto corresponde ao item da sua dieta")
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(Color.chefSuccess)
+                        Text("Prescrito: \(Int(prescribedMatch.quantity))\(prescribedMatch.unit == .g ? "g" : "ml") · Escaneado: \(Int(portionSize))\(portionUnit == .ml ? "ml" : "g")")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(10)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.chefSuccess.opacity(0.1), in: .rect(cornerRadius: 12))
+                } else if differsFromPrescribed {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Este produto é diferente dos itens da sua dieta prescrita.")
+                            .font(.caption.weight(.semibold))
+                        Text("Isso não significa que ele não sirva — apenas que não está na sua lista prescrita.")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(10)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(.thinMaterial, in: .rect(cornerRadius: 12))
+                }
 
                 HStack(spacing: 16) {
                     metric(value: previewNutrition.calories, unit: "kcal", tint: .chefPrimary)
