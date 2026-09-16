@@ -5,13 +5,13 @@ import ChefCore
 /// Abstração de OCR (seção 14 do plano de migração) — a UI depende só
 /// deste protocolo, nunca do Vision diretamente, então trocar de provider
 /// no futuro (ex: um serviço de IA mais robusto) não exige tocar nas telas.
-protocol OCRProvider {
+protocol OCRProvider: Sendable {
     func extractLines(from image: UIImage) async throws -> [OCRLine]
 }
 
 /// Implementação real usando o Vision framework — reconhecimento de texto
 /// nativo, sem enviar a imagem pra nenhum servidor.
-struct VisionTextRecognizer: OCRProvider {
+struct VisionTextRecognizer: OCRProvider, Sendable {
     enum RecognitionError: Error {
         case invalidImage
     }
