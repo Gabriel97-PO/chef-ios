@@ -75,6 +75,12 @@ jobs:
           sleep 4
           mkdir -p screenshots
           xcrun simctl io "$device" screenshot screenshots/hoje.png
+          xcrun simctl openurl "$device" "chef://scan"
+          sleep 3
+          xcrun simctl io "$device" screenshot screenshots/scan.png
+          xcrun simctl openurl "$device" "chef://dieta"
+          sleep 2
+          xcrun simctl io "$device" screenshot screenshots/dieta.png
           xcrun simctl shutdown "$device" || true
 
       - name: Upload screenshot
