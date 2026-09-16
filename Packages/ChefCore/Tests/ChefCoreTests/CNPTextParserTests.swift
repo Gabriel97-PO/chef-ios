@@ -19,7 +19,7 @@ final class CNPTextParserTests: XCTestCase {
         XCTAssertEqual(result.summary.mealCount, 1)
     }
 
-    func testExtractsPatientGoalsAndMealsFromStructuredText() {
+    func testExtractsPatientGoalsAndMealsFromStructuredText() throws {
         let text = [
             "PACIENTE: Gabriel", "",
             "CALORIAS: 2100", "PROTEÍNA: 170", "",
