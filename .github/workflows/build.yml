@@ -1,0 +1,21 @@
+name: Build & Test
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  chef-core:
+    name: ChefCore (swift test)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Toolchain versions
+        run: |
+          xcodebuild -version
+          swift --version
+
+      - name: swift test
+        working-directory: Packages/ChefCore
+        run: swift test
