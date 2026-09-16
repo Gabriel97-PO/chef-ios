@@ -42,6 +42,8 @@ struct ChefTabBar: View {
     private func tabButton(_ item: ChefTabBarItem) -> some View {
         let isSelected = selection == item.tab
         return Button {
+            guard !isSelected else { return }
+            Haptics.selection()
             withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                 selection = item.tab
             }
@@ -58,11 +60,14 @@ struct ChefTabBar: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(item.label)
+        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
     }
 
     private var scanButton: some View {
         let isSelected = selection == .scan
         return Button {
+            guard !isSelected else { return }
+            Haptics.tap()
             withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                 selection = .scan
             }
@@ -77,6 +82,7 @@ struct ChefTabBar: View {
         .shadow(color: Color.chefPrimary.opacity(0.35), radius: isSelected ? 18 : 12, y: 6)
         .scaleEffect(isSelected ? 1.05 : 1.0)
         .accessibilityLabel("Scan")
+        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
     }
 }
 

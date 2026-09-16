@@ -94,11 +94,13 @@ struct ScannerView: View {
     }
 
     private func capture() async {
+        Haptics.tap()
         isProcessing = true
         processingError = nil
         defer { isProcessing = false }
 
         guard let image = await camera.capturePhoto() else {
+            Haptics.error()
             processingError = "Não foi possível capturar a foto. Tente novamente."
             return
         }
@@ -106,8 +108,10 @@ struct ScannerView: View {
         do {
             let lines = try await ocrProvider.extractLines(from: image)
             scanResult = NutritionLabelParser.parse(lines: lines)
+            Haptics.success()
             showResultSheet = true
         } catch {
+            Haptics.error()
             processingError = "Não foi possível analisar a imagem. Tente novamente."
         }
     }

@@ -101,8 +101,7 @@ private struct ConsumptionCard: View {
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
         }
-        .padding(16)
-        .glassEffect(in: .rect(cornerRadius: 20))
+        .chefGlassCard()
     }
 }
 
@@ -156,8 +155,7 @@ private struct WeightTrendCard: View {
                 }
             }
         }
-        .padding(16)
-        .glassEffect(in: .rect(cornerRadius: 20))
+        .chefGlassCard()
     }
 }
 

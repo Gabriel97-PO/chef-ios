@@ -27,6 +27,7 @@ struct ScanResultSheet: View {
     @State private var fiber: Double?
     @State private var sodium: Double?
     @State private var quantity: Double
+    @ScaledMetric(relativeTo: .largeTitle) private var metricSize: CGFloat = 32
 
     private var confidenceByField: [String: Double?]
 
@@ -147,8 +148,7 @@ struct ScanResultSheet: View {
                     metric(value: previewNutrition.protein, unit: "g proteína", tint: .chefSuccess)
                 }
                 .frame(maxWidth: .infinity)
-                .padding(20)
-                .glassEffect(in: .rect(cornerRadius: 24))
+                .chefGlassCard(cornerRadius: 24, padding: 20)
 
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
                     field("Carboidratos", value: $carbs, key: "carbs")
@@ -181,8 +181,7 @@ struct ScanResultSheet: View {
                         .foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity)
-                .padding(20)
-                .glassEffect(in: .rect(cornerRadius: 24))
+                .chefGlassCard(cornerRadius: 24, padding: 20)
 
                 if missingRequiredFields {
                     Text("Preencha os campos não identificados (🔴) para adicionar.")
@@ -226,6 +225,7 @@ struct ScanResultSheet: View {
         let entry = FoodEntry(foodId: food.id, name: name, quantity: quantity, unit: portionUnit, nutrition: previewNutrition)
         MealStore.addItems([entry], date: DateKey.today(), slot: slot, in: context)
 
+        Haptics.success()
         onAdded?()
         dismiss()
     }
@@ -234,7 +234,7 @@ struct ScanResultSheet: View {
     private func metric(value: Double, unit: String, tint: Color) -> some View {
         VStack(spacing: 2) {
             Text(value.formatted(.number.precision(.fractionLength(0))))
-                .font(.system(size: 32, weight: .black, design: .rounded))
+                .font(.system(size: metricSize, weight: .black, design: .rounded))
                 .foregroundStyle(tint)
             Text(unit)
                 .font(.caption)
@@ -251,6 +251,7 @@ struct ScanResultSheet: View {
                 Circle()
                     .fill(tierColor(tier))
                     .frame(width: 8, height: 8)
+                    .accessibilityHidden(true)
                 Text(label)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
@@ -258,6 +259,7 @@ struct ScanResultSheet: View {
             TextField(tier == .unrecognized ? "não identificado" : "", text: stringBinding(for: value))
                 .keyboardType(.decimalPad)
                 .font(.headline)
+                .accessibilityLabel("\(label), confiança \(confidenceDescription(tier))")
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -272,6 +274,14 @@ struct ScanResultSheet: View {
                 value.wrappedValue = normalized.isEmpty ? nil : Double(normalized)
             }
         )
+    }
+
+    private func confidenceDescription(_ tier: ConfidenceTier) -> String {
+        switch tier {
+        case .high: return "alta"
+        case .review: return "revisar"
+        case .unrecognized: return "não identificado"
+        }
     }
 
     private func tierColor(_ tier: ConfidenceTier) -> Color {

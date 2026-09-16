@@ -51,8 +51,7 @@ private struct NameCard: View {
             .font(.subheadline.weight(.semibold))
             .foregroundStyle(Color.chefPrimary)
         }
-        .padding(16)
-        .glassEffect(in: .rect(cornerRadius: 20))
+        .chefGlassCard()
     }
 }
 
@@ -106,8 +105,7 @@ private struct WeightCard: View {
                 .frame(height: 50, alignment: .bottom)
             }
         }
-        .padding(16)
-        .glassEffect(in: .rect(cornerRadius: 20))
+        .chefGlassCard()
         .onAppear {
             if let latest { input = latest.formatted(.number.precision(.fractionLength(1))) }
         }
@@ -140,6 +138,7 @@ private struct WeightCard: View {
     private func logWeight() {
         guard let value = Double(input.replacingOccurrences(of: ",", with: ".")), value > 0 else { return }
         WeightStore.logToday(value, dateKey: DateKey.today(), in: context)
+        Haptics.success()
         logged = true
         Task {
             try? await Task.sleep(for: .seconds(1.5))
@@ -156,8 +155,7 @@ private struct AboutCard: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
-        .padding(16)
-        .glassEffect(in: .rect(cornerRadius: 20))
+        .chefGlassCard()
     }
 }
 

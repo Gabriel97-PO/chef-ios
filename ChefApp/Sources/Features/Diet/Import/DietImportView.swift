@@ -20,6 +20,7 @@ struct DietImportView: View {
     @State private var result: CnpImportResult?
     @State private var unmatched: [String] = []
     @State private var checklistStep = 0
+    @ScaledMetric(relativeTo: .largeTitle) private var heroSize: CGFloat = 32
 
     var body: some View {
         NavigationStack {
@@ -60,8 +61,7 @@ struct DietImportView: View {
                     .multilineTextAlignment(.center)
             }
             .frame(maxWidth: .infinity)
-            .padding(20)
-            .glassEffect(in: .rect(cornerRadius: 20))
+            .chefGlassCard(cornerRadius: 20, padding: 20)
 
             TextEditor(text: $text)
                 .frame(height: 220)
@@ -121,7 +121,7 @@ struct DietImportView: View {
         VStack(alignment: .leading, spacing: 14) {
             VStack(spacing: 6) {
                 Text("Sua dieta foi encontrada").font(.subheadline).foregroundStyle(.secondary)
-                Text("\(Int(result.document.goals.calories)) kcal").font(.system(size: 32, weight: .black, design: .rounded))
+                Text("\(Int(result.document.goals.calories)) kcal").font(.system(size: heroSize, weight: .black, design: .rounded))
                 Text("\(Int(result.document.goals.proteinG))g proteína").font(.headline).foregroundStyle(Color.chefSuccess)
                 HStack(spacing: 16) {
                     Text("\(result.summary.mealCount) refeições")
@@ -132,8 +132,7 @@ struct DietImportView: View {
                 .foregroundStyle(.secondary)
             }
             .frame(maxWidth: .infinity)
-            .padding(20)
-            .glassEffect(in: .rect(cornerRadius: 20))
+            .chefGlassCard(cornerRadius: 20, padding: 20)
 
             if !result.summary.foundCalorieGoal || !result.summary.foundProteinGoal {
                 warningBox("Não encontramos \(!result.summary.foundCalorieGoal ? "a meta calórica" : "")\(!result.summary.foundCalorieGoal && !result.summary.foundProteinGoal ? " nem " : "")\(!result.summary.foundProteinGoal ? "a meta proteica" : "") no texto. Você pode ajustar depois em \"Dieta\".")
@@ -229,6 +228,7 @@ struct DietImportView: View {
 
     private func applyDiet(_ result: CnpImportResult) {
         _ = DietImportService.apply(result, label: result.document.patient.name.isEmpty ? "Dieta importada" : result.document.patient.name, in: context)
+        Haptics.success()
         stage = .applied
     }
 }

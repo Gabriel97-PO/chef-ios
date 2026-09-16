@@ -88,6 +88,7 @@ private struct GoalForm: View {
 
             Button {
                 try? context.save()
+                Haptics.success()
                 saved = true
                 Task {
                     try? await Task.sleep(for: .seconds(1.5))
@@ -102,8 +103,7 @@ private struct GoalForm: View {
             .buttonStyle(.borderedProminent)
             .tint(.chefPrimary)
         }
-        .padding(16)
-        .glassEffect(in: .rect(cornerRadius: 20))
+        .chefGlassCard()
     }
 
     private func optionalBinding(_ keyPath: WritableKeyPath<DailyGoal, Double?>) -> Binding<Double> {
@@ -167,8 +167,7 @@ private struct FixedMealsTab: View {
                         .background(Color.chefPrimary, in: .rect(cornerRadius: 10))
                         .foregroundStyle(.white)
                 }
-                .padding(14)
-                .glassEffect(in: .rect(cornerRadius: 16))
+                .chefGlassCard(cornerRadius: 16, padding: 14)
             }
 
             if creating {
@@ -189,8 +188,7 @@ private struct FixedMealsTab: View {
                         .disabled(name.isEmpty || ingredients.isEmpty)
                     }
                 }
-                .padding(14)
-                .glassEffect(in: .rect(cornerRadius: 16))
+                .chefGlassCard(cornerRadius: 16, padding: 14)
             } else {
                 Button("+ Nova refeição fixa") { creating = true }
                     .frame(maxWidth: .infinity)
@@ -250,8 +248,7 @@ private struct RecipesTab: View {
                         .background(Color.chefPrimary, in: .rect(cornerRadius: 10))
                         .foregroundStyle(.white)
                 }
-                .padding(14)
-                .glassEffect(in: .rect(cornerRadius: 16))
+                .chefGlassCard(cornerRadius: 16, padding: 14)
             }
 
             if creating {
@@ -274,8 +271,7 @@ private struct RecipesTab: View {
                         .disabled(name.isEmpty || ingredients.isEmpty)
                     }
                 }
-                .padding(14)
-                .glassEffect(in: .rect(cornerRadius: 16))
+                .chefGlassCard(cornerRadius: 16, padding: 14)
             } else {
                 Button("+ Nova receita") { creating = true }
                     .frame(maxWidth: .infinity)

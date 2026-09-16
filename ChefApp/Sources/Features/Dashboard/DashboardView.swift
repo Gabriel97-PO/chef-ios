@@ -9,6 +9,7 @@ struct DashboardView: View {
     @Environment(\.modelContext) private var context
     @Query private var profiles: [SDUserProfile]
     @Query private var meals: [SDMealEntry]
+    @ScaledMetric(relativeTo: .largeTitle) private var heroSize: CGFloat = 64
 
     private var profile: SDUserProfile? { profiles.first }
     private let today = DateKey.today()
@@ -42,7 +43,7 @@ struct DashboardView: View {
 
                         VStack(spacing: 6) {
                             Text("\(Int(consumed.calories))")
-                                .font(.system(size: 64, weight: .black, design: .rounded))
+                                .font(.system(size: heroSize, weight: .black, design: .rounded))
                                 .monospacedDigit()
                             Text("de \(Int(goal.calories)) kcal")
                                 .font(.subheadline)
@@ -105,8 +106,7 @@ private struct MetricChip: View {
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
-        .glassEffect(in: .rect(cornerRadius: 20))
+        .chefGlassCard()
     }
 }
 
@@ -152,8 +152,7 @@ private struct MealRow: View {
                     .foregroundStyle(.tertiary)
             }
         }
-        .padding(14)
-        .glassEffect(in: .rect(cornerRadius: 16))
+        .chefGlassCard(cornerRadius: 16, padding: 14)
     }
 }
 
