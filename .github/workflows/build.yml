@@ -75,13 +75,12 @@ jobs:
           sleep 4
           mkdir -p screenshots
           xcrun simctl io "$device" screenshot screenshots/hoje.png
-          xcrun simctl openurl "$device" "chef://scan"
-          sleep 3
-          xcrun simctl io "$device" screenshot screenshots/scan.png
-          xcrun simctl openurl "$device" "chef://dieta"
-          sleep 2
-          xcrun simctl io "$device" screenshot screenshots/dieta.png
           xcrun simctl shutdown "$device" || true
+          # Nota: "xcrun simctl openurl" para navegar a outras abas via deep
+          # link (chef://scan, chef://dieta) dispara um alerta de sistema
+          # "Open in Chef?" que exige um toque — sem XCUITest não dá pra
+          # confirmar esse alerta de forma automatizada, então isso não
+          # captura a tela real. Removido até termos um alvo de UI test.
 
       - name: Upload screenshot
         uses: actions/upload-artifact@v4
