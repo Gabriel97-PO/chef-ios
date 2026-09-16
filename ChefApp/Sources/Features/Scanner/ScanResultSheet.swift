@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 import ChefCore
 
 /// Tela de confirmação do scanner (seção 20/21 do plano de migração):
@@ -7,6 +8,11 @@ import ChefCore
 /// consumo ainda fixos nesta fase — entram do estado real do app na Fase 4.
 struct ScanResultSheet: View {
     let scanResult: ScanResult
+    var onAdded: (() -> Void)?
+
+    @Environment(\.modelContext) private var context
+    @Environment(\.dismiss) private var dismiss
+    @State private var showSlotPicker = false
 
     @State private var name: String
     @State private var portionSize: Double
@@ -138,7 +144,7 @@ struct ScanResultSheet: View {
                 }
 
                 Button {
-                    // Adicionar ao dia entra com o estado real do app na Fase 4.
+                    showSlotPicker = true
                 } label: {
                     Text("Adicionar ao dia")
                         .font(.headline)
@@ -151,6 +157,29 @@ struct ScanResultSheet: View {
             }
             .padding(20)
         }
+        .confirmationDialog("Adicionar em qual refeição?", isPresented: $showSlotPicker, titleVisibility: .visible) {
+            ForEach(MealSlot.allCases) { slot in
+                Button(slot.label) { addToDay(slot: slot) }
+            }
+        }
+    }
+
+    private func addToDay(slot: MealSlot) {
+        let food = SDFood(
+            name: name,
+            baseUnit: portionUnit,
+            baseQuantity: portionSize > 0 ? portionSize : 100,
+            nutrition: NutritionFacts(calories: calories ?? 0, protein: protein ?? 0, carbs: carbs ?? 0, fat: fat ?? 0, fiber: fiber, sodium: sodium),
+            isCustom: true,
+            source: .scanner
+        )
+        context.insert(food)
+
+        let entry = FoodEntry(foodId: food.id, name: name, quantity: quantity, unit: portionUnit, nutrition: previewNutrition)
+        MealStore.addItems([entry], date: DateKey.today(), slot: slot, in: context)
+
+        onAdded?()
+        dismiss()
     }
 
     @ViewBuilder
