@@ -27,6 +27,45 @@ final class ScreenshotUITests: XCTestCase {
         }
     }
 
+    /// Percorre o fluxo de importação de dieta (CNP) de ponta a ponta e
+    /// captura cada etapa: colar texto, processando, revisão e aplicado.
+    /// Complementa `testCaptureMainScreens`, que só navega pelas abas
+    /// principais e não abre o sheet de importação.
+    func testCaptureDietImportFlow() throws {
+        let app = XCUIApplication()
+        app.launch()
+
+        let dietaTab = app.buttons["Dieta"]
+        guard dietaTab.waitForExistence(timeout: 5) else { return }
+        dietaTab.tap()
+
+        let importButton = app.buttons["Importar"]
+        guard importButton.waitForExistence(timeout: 5) else { return }
+        importButton.tap()
+
+        let textEditor = app.textViews.firstMatch
+        guard textEditor.waitForExistence(timeout: 5) else { return }
+        textEditor.tap()
+        textEditor.typeText("PACIENTE: Gabriel\n\nCALORIAS: 2100\nPROTEÍNA: 170\n\nALMOÇO\n150 g arroz\n200 g peito de frango\nOU\n200 g batata doce")
+        attachScreenshot(app, name: "06-import-texto")
+
+        let analyzeButton = app.buttons["Analisar dieta"]
+        guard analyzeButton.waitForExistence(timeout: 5) else { return }
+        analyzeButton.tap()
+        attachScreenshot(app, name: "07-import-processando")
+
+        let applyButton = app.buttons["Aplicar dieta"]
+        guard applyButton.waitForExistence(timeout: 5) else { return }
+        sleep(1)
+        attachScreenshot(app, name: "08-import-revisao")
+
+        applyButton.tap()
+
+        let seeMyDietButton = app.buttons["Ver minha dieta"]
+        _ = seeMyDietButton.waitForExistence(timeout: 5)
+        attachScreenshot(app, name: "09-import-aplicado")
+    }
+
     private func attachScreenshot(_ app: XCUIApplication, name: String) {
         let screenshot = app.screenshot()
         let attachment = XCTAttachment(screenshot: screenshot)
