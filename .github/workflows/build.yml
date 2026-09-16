@@ -44,19 +44,41 @@ jobs:
       - name: Available iOS SDKs
         run: xcodebuild -showsdks | grep -i ios || true
 
-      - name: List available simulators
-        run: xcrun simctl list devices available | grep -i iphone || true
+      - name: Pick a simulator device
+        run: |
+          DEVICE=$(xcrun simctl list devices available | grep -m1 -oE 'iPhone [0-9]+( Pro)?' || echo "iPhone 16")
+          echo "device=$DEVICE" >> "$GITHUB_ENV"
+          echo "Using device: $DEVICE"
 
       - name: Build for Simulator
         run: |
           xcodebuild build \
             -scheme Chef \
-            -destination 'generic/platform=iOS Simulator'
+            -destination "platform=iOS Simulator,name=$device" \
+            -derivedDataPath build
 
       - name: Test on Simulator
         run: |
-          DEVICE=$(xcrun simctl list devices available | grep -m1 -oE 'iPhone [0-9]+( Pro)?' || echo "iPhone 16")
-          echo "Using device: $DEVICE"
           xcodebuild test \
             -scheme Chef \
-            -destination "platform=iOS Simulator,name=$DEVICE"
+            -destination "platform=iOS Simulator,name=$device" \
+            -derivedDataPath build
+
+      - name: Screenshot the running app
+        run: |
+          xcrun simctl boot "$device" || true
+          xcrun simctl bootstatus "$device" -b
+          APP_PATH=$(find build/Build/Products -maxdepth 1 -name "Chef.app" -path "*iphonesimulator*" | head -n1)
+          echo "App at: $APP_PATH"
+          xcrun simctl install "$device" "$APP_PATH"
+          xcrun simctl launch "$device" com.chef.app
+          sleep 4
+          mkdir -p screenshots
+          xcrun simctl io "$device" screenshot screenshots/hoje.png
+          xcrun simctl shutdown "$device" || true
+
+      - name: Upload screenshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: chef-screenshots
+          path: screenshots/*.png
