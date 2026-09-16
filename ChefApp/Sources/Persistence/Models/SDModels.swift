@@ -126,3 +126,22 @@ final class SDRecipe {
         Recipe(id: id, name: name, ingredients: ingredients, servings: servings, createdAt: createdAt)
     }
 }
+
+@Model
+final class SDFixedMeal {
+    @Attribute(.unique) var id: String
+    var name: String
+    var items: [FoodEntry]
+    var createdAt: Date
+
+    init(id: String = UUID().uuidString, name: String, items: [FoodEntry], createdAt: Date = Date()) {
+        self.id = id
+        self.name = name
+        self.items = items
+        self.createdAt = createdAt
+    }
+
+    var asFixedMeal: FixedMeal {
+        FixedMeal(id: id, name: name, items: items, createdAt: createdAt)
+    }
+}

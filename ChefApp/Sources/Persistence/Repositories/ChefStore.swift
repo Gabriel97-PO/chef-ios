@@ -92,3 +92,37 @@ enum RecipeStore {
         (try? context.fetch(FetchDescriptor<SDRecipe>(sortBy: [SortDescriptor(\.name)]))) ?? []
     }
 }
+
+enum FixedMealStore {
+    static func all(in context: ModelContext) -> [SDFixedMeal] {
+        (try? context.fetch(FetchDescriptor<SDFixedMeal>(sortBy: [SortDescriptor(\.name)]))) ?? []
+    }
+
+    @discardableResult
+    static func create(name: String, items: [FoodEntry], in context: ModelContext) -> SDFixedMeal {
+        let meal = SDFixedMeal(name: name, items: items)
+        context.insert(meal)
+        try? context.save()
+        return meal
+    }
+
+    static func remove(_ meal: SDFixedMeal, in context: ModelContext) {
+        context.delete(meal)
+        try? context.save()
+    }
+}
+
+extension RecipeStore {
+    @discardableResult
+    static func create(name: String, ingredients: [RecipeIngredient], servings: Int, in context: ModelContext) -> SDRecipe {
+        let recipe = SDRecipe(name: name, ingredients: ingredients, servings: servings)
+        context.insert(recipe)
+        try? context.save()
+        return recipe
+    }
+
+    static func remove(_ recipe: SDRecipe, in context: ModelContext) {
+        context.delete(recipe)
+        try? context.save()
+    }
+}
