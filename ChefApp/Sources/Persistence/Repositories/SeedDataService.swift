@@ -19,7 +19,7 @@ enum SeedDataService {
         }
 
         if FoodStore.all(in: context).isEmpty {
-            for food in seedFoods {
+            for food in makeSeedFoods() {
                 FoodStore.create(food, in: context)
             }
         }
@@ -47,7 +47,8 @@ enum SeedDataService {
         SDFood(id: id, name: name, baseUnit: unit, baseQuantity: qty, nutrition: facts, isCustom: false, source: .seed)
     }
 
-    private static let seedFoods: [SDFood] = [
+    private static func makeSeedFoods() -> [SDFood] {
+        [
         food("food-arroz-branco", "Arroz branco cozido", .g, 100, NutritionFacts(calories: 128, protein: 2.5, carbs: 28, fat: 0.2, fiber: 0.4, sodium: 1)),
         food("food-peito-frango", "Peito de frango grelhado", .g, 100, NutritionFacts(calories: 165, protein: 31, carbs: 0, fat: 3.6, fiber: 0, sodium: 74)),
         food("food-carne-moida", "Carne moída (patinho)", .g, 100, NutritionFacts(calories: 217, protein: 26, carbs: 0, fat: 12, fiber: 0, sodium: 66)),
@@ -64,10 +65,11 @@ enum SeedDataService {
         food("food-parmesao", "Parmesão", .g, 100, NutritionFacts(calories: 392, protein: 35, carbs: 3.2, fat: 26, fiber: 0, sodium: 1529)),
         food("food-azeite", "Azeite de oliva", .ml, 100, NutritionFacts(calories: 884, protein: 0, carbs: 0, fat: 100, fiber: 0, sodium: 2)),
         food("food-goma-tapioca", "Goma de tapioca hidratada", .g, 100, NutritionFacts(calories: 180, protein: 0.2, carbs: 44, fat: 0.1, fiber: 0.5, sodium: 5)),
-    ]
+        ]
+    }
 
     private static func seedRecipes(context: ModelContext) -> [SDRecipe] {
-        let foodsByID = Dictionary(uniqueKeysWithValues: seedFoods.map { ($0.id, $0) })
+        let foodsByID = Dictionary(uniqueKeysWithValues: makeSeedFoods().map { ($0.id, $0) })
 
         func ingredient(_ foodID: String, _ quantity: Double, _ unit: PortionUnit, label: String? = nil) -> RecipeIngredient {
             guard let food = foodsByID[foodID] else { fatalError("Seed: alimento \(foodID) não encontrado") }
