@@ -25,6 +25,7 @@ struct RootTabView: View {
                 ProfileView()
             }
         }
+        .tint(.chefPrimary)
     }
 }
 

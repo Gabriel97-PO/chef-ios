@@ -47,8 +47,8 @@ struct DashboardView: View {
                     .glassEffect(in: .rect(cornerRadius: 28))
 
                     HStack(spacing: 12) {
-                        MetricChip(icon: "flame.fill", value: "\(Int(budget.caloriesRemaining))", label: "kcal restantes", tint: .orange)
-                        MetricChip(icon: "bolt.fill", value: "\(Int(max(0, budget.proteinRemaining)))g", label: "proteína restante", tint: .green)
+                        MetricChip(icon: "flame.fill", value: "\(Int(budget.caloriesRemaining))", label: "kcal restantes", tint: .chefPrimary)
+                        MetricChip(icon: "bolt.fill", value: "\(Int(max(0, budget.proteinRemaining).rounded()))g", label: "proteína restante", tint: .chefSuccess)
                     }
                 }
                 .padding()
