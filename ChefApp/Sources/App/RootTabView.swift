@@ -5,11 +5,11 @@ enum ChefTab: String, Hashable {
 }
 
 /// Casca de navegação principal — Hoje · Dieta · Scan · Histórico · Perfil
-/// (seção 8 do plano de migração). Usa o `TabView` nativo do iOS 26 com a
-/// API `Tab(_:systemImage:content:)`: o sistema já aplica o material
-/// Liquid Glass na barra automaticamente — não recriamos isso manualmente
-/// como no PWA. O destaque do Scanner como "protagonista" é um refinamento
-/// da Fase 2 (seção 9), depois que esta casca básica estiver validada.
+/// (seção 8 do plano de migração). A validação inicial usou o `TabView`
+/// nativo do iOS 26; agora que o produto está funcionando, trocamos pela
+/// `ChefTabBar` customizada para dar ao Scanner o destaque de "protagonista"
+/// previsto na seção 9 — um botão elevado, próprio, que o `Tab(...)` padrão
+/// não permite diferenciar dos demais.
 ///
 /// A seleção é controlável via deep link (`chef://<aba>`) — usado pelo CI
 /// pra navegar até uma aba específica e tirar screenshot dela sem precisar
@@ -18,28 +18,27 @@ struct RootTabView: View {
     @State private var selection: ChefTab = .hoje
 
     var body: some View {
-        TabView(selection: $selection) {
-            Tab("Hoje", systemImage: "house.fill", value: ChefTab.hoje) {
-                DashboardView()
+        content
+            .safeAreaInset(edge: .bottom) {
+                ChefTabBar(selection: $selection)
+                    .padding(.horizontal, 20)
+                    .padding(.top, 8)
             }
-            Tab("Dieta", systemImage: "target", value: ChefTab.dieta) {
-                DietView()
+            .onOpenURL { url in
+                if let tab = ChefTab(rawValue: url.host ?? "") {
+                    selection = tab
+                }
             }
-            Tab("Scan", systemImage: "camera.fill", value: ChefTab.scan) {
-                ScannerView()
-            }
-            Tab("Histórico", systemImage: "chart.line.uptrend.xyaxis", value: ChefTab.historico) {
-                HistoryView()
-            }
-            Tab("Perfil", systemImage: "person.crop.circle", value: ChefTab.perfil) {
-                ProfileView()
-            }
-        }
-        .tint(.chefPrimary)
-        .onOpenURL { url in
-            if let tab = ChefTab(rawValue: url.host ?? "") {
-                selection = tab
-            }
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        switch selection {
+        case .hoje: DashboardView()
+        case .dieta: DietView()
+        case .scan: ScannerView()
+        case .historico: HistoryView()
+        case .perfil: ProfileView()
         }
     }
 }
