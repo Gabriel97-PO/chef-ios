@@ -27,6 +27,29 @@ final class ScreenshotUITests: XCTestCase {
         }
     }
 
+    /// Abre o detalhe de uma refeição do dia. É onde aparecem o que a dieta
+    /// prescreve pra aquele horário (roadmap item 5) e o campo pra registrar
+    /// alimento no dia (item 7) — nenhum dos dois é alcançável pelos
+    /// screenshots das abas principais.
+    func testCaptureMealDetail() throws {
+        let app = XCUIApplication()
+        app.launch()
+
+        // O card do almoço é o que recebe a dieta importada pelo outro teste.
+        let almoco = app.staticTexts["Almoço"]
+        guard almoco.waitForExistence(timeout: 5) else { return }
+        almoco.tap()
+        sleep(1)
+        attachScreenshot(app, name: "14-refeicao-detalhe")
+
+        let addButton = app.buttons["Adicionar alimento"]
+        if addButton.waitForExistence(timeout: 3) {
+            addButton.tap()
+            sleep(1)
+            attachScreenshot(app, name: "15-refeicao-adicionar")
+        }
+    }
+
     /// Percorre o fluxo de importação de dieta (CNP) de ponta a ponta e
     /// captura cada etapa: colar texto, processando, revisão e aplicado.
     /// Complementa `testCaptureMainScreens`, que só navega pelas abas
