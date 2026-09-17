@@ -55,10 +55,10 @@ struct DietImportView: View {
                     .font(.subheadline)
                     .multilineTextAlignment(.center)
                     .foregroundStyle(.secondary)
-                Text("PDF/DOCX ainda não são lidos automaticamente nesta versão — cole o texto extraído dele abaixo.")
+                Label("PDF/DOCX ainda não são lidos automaticamente nesta versão — cole o texto extraído dele abaixo.", systemImage: "info.circle")
                     .font(.caption)
                     .foregroundStyle(.tertiary)
-                    .multilineTextAlignment(.center)
+                    .multilineTextAlignment(.leading)
             }
             .frame(maxWidth: .infinity)
             .chefGlassCard(cornerRadius: 20, padding: 20)
@@ -78,13 +78,18 @@ struct DietImportView: View {
                 }
 
             if let errorMessage {
-                Text(errorMessage).font(.caption).foregroundStyle(.red)
+                Label(errorMessage, systemImage: "exclamationmark.triangle.fill")
+                    .font(.caption)
+                    .foregroundStyle(.red)
             }
 
             Button {
                 analyze()
             } label: {
-                Text("Analisar dieta").font(.headline).frame(maxWidth: .infinity).padding()
+                Label("Analisar dieta", systemImage: "sparkles")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity)
+                    .padding()
             }
             .buttonStyle(.borderedProminent)
             .tint(.chefPrimary)
@@ -96,7 +101,8 @@ struct DietImportView: View {
 
     private var processingStage: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Lendo sua dieta…").font(.headline)
+            Label("Lendo sua dieta…", systemImage: "doc.text.magnifyingglass")
+                .font(.headline)
             checklistRow("Encontramos sua meta calórica", done: checklistStep >= 1)
             checklistRow("Encontramos sua meta proteica", done: checklistStep >= 2)
             checklistRow("Identificamos suas refeições", done: checklistStep >= 3)
@@ -120,13 +126,15 @@ struct DietImportView: View {
     private func reviewStage(_ result: CnpImportResult) -> some View {
         VStack(alignment: .leading, spacing: 14) {
             VStack(spacing: 6) {
-                Text("Sua dieta foi encontrada").font(.subheadline).foregroundStyle(.secondary)
+                Label("Sua dieta foi encontrada", systemImage: "checkmark.seal.fill")
+                    .font(.subheadline)
+                    .foregroundStyle(Color.chefSuccess)
                 Text("\(Int(result.document.goals.calories)) kcal").font(.system(size: heroSize, weight: .black, design: .rounded))
                 Text("\(Int(result.document.goals.proteinG))g proteína").font(.headline).foregroundStyle(Color.chefSuccess)
-                HStack(spacing: 16) {
-                    Text("\(result.summary.mealCount) refeições")
-                    Text("\(result.summary.foodCount) alimentos")
-                    Text("\(result.summary.substitutionCount) substituições")
+                HStack(spacing: 14) {
+                    Label("\(result.summary.mealCount)", systemImage: "fork.knife")
+                    Label("\(result.summary.foodCount)", systemImage: "carrot.fill")
+                    Label("\(result.summary.substitutionCount)", systemImage: "arrow.triangle.2.circlepath")
                 }
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -143,7 +151,7 @@ struct DietImportView: View {
             }
 
             if !unmatched.isEmpty {
-                Text("Sem informação nutricional ainda: \(unmatched.joined(separator: ", ")) — serão adicionados às refeições fixas, mas você precisa cadastrar os valores nutricionais deles manualmente em \"Registrar\".")
+                Label("Sem informação nutricional ainda: \(unmatched.joined(separator: ", ")) — serão adicionados às refeições fixas, mas você precisa cadastrar os valores nutricionais deles manualmente em \"Registrar\".", systemImage: "questionmark.circle")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .padding(12)
@@ -152,12 +160,13 @@ struct DietImportView: View {
 
             ForEach(result.document.meals, id: \.name) { meal in
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(meal.name).font(.subheadline.weight(.semibold))
+                    Label(meal.name, systemImage: "fork.knife")
+                        .font(.subheadline.weight(.semibold))
                     Text(meal.foods.map(\.name).joined(separator: ", "))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     if let substitutions = meal.substitutions, !substitutions.isEmpty {
-                        Text(substitutions.map { $0.options.map(\.name).joined(separator: " ou ") }.joined(separator: " · ") + " — usamos \"\(substitutions[0].options[0].name)\" como padrão; troque depois se preferir.")
+                        Label(substitutions.map { $0.options.map(\.name).joined(separator: " ou ") }.joined(separator: " · ") + " — usamos \"\(substitutions[0].options[0].name)\" como padrão; troque depois se preferir.", systemImage: "arrow.triangle.2.circlepath")
                             .font(.caption2)
                             .foregroundStyle(.orange)
                     }
@@ -168,18 +177,26 @@ struct DietImportView: View {
             }
 
             HStack(spacing: 10) {
-                Button("Revisar texto") { stage = .input }
-                    .buttonStyle(.bordered)
-                Button("Aplicar dieta") { applyDiet(result) }
-                    .buttonStyle(.borderedProminent)
-                    .tint(.chefPrimary)
+                Button {
+                    stage = .input
+                } label: {
+                    Label("Revisar texto", systemImage: "pencil")
+                }
+                .buttonStyle(.bordered)
+                Button {
+                    applyDiet(result)
+                } label: {
+                    Label("Aplicar dieta", systemImage: "checkmark.circle.fill")
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.chefPrimary)
             }
             .frame(maxWidth: .infinity)
         }
     }
 
     private func warningBox(_ text: String) -> some View {
-        Text(text)
+        Label(text, systemImage: "exclamationmark.triangle.fill")
             .font(.caption)
             .foregroundStyle(.orange)
             .padding(12)

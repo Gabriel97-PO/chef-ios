@@ -124,7 +124,7 @@ private struct WeightCard: View {
                         .padding(.horizontal, 16)
                         .padding(.vertical, 10)
                         .background(logged ? Color.chefSuccess : Color.chefPrimary, in: .rect(cornerRadius: 10))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Color.chefOnPrimary)
                 }
             }
         }

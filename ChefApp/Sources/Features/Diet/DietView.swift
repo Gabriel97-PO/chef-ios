@@ -28,12 +28,16 @@ struct DietView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     HStack(alignment: .center) {
                         ChefHeader(title: "Dieta")
-                        Button("Importar") { showImport = true }
-                            .font(.subheadline.weight(.semibold))
+                        Button {
+                            showImport = true
+                        } label: {
+                            Label("Importar", systemImage: "square.and.arrow.down")
+                                .font(.subheadline.weight(.semibold))
+                        }
                     }
 
                     if let activeDiet {
-                        Text("Dieta ativa: **\(activeDiet.label)** · importada em \(activeDiet.importedAt.formatted(date: .abbreviated, time: .omitted))")
+                        Label("Dieta ativa: **\(activeDiet.label)** · importada em \(activeDiet.importedAt.formatted(date: .abbreviated, time: .omitted))", systemImage: "doc.text.fill")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -168,7 +172,7 @@ private struct FixedMealsTab: View {
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 8)
                         .background(Color.chefPrimary, in: .rect(cornerRadius: 10))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Color.chefOnPrimary)
                 }
                 .chefGlassCard(cornerRadius: 16, padding: 14)
             }
@@ -249,7 +253,7 @@ private struct RecipesTab: View {
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 8)
                         .background(Color.chefPrimary, in: .rect(cornerRadius: 10))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Color.chefOnPrimary)
                 }
                 .chefGlassCard(cornerRadius: 16, padding: 14)
             }

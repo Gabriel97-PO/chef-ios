@@ -27,6 +27,28 @@ final class ScreenshotUITests: XCTestCase {
         }
     }
 
+    /// Mesmas telas no tema escuro, onde a identidade do app troca de
+    /// laranja para preto + verde neon (roadmap item 9). Sem isso não há
+    /// como verificar a paleta escura sem Xcode local.
+    func testCaptureMainScreensDarkMode() throws {
+        XCUIDevice.shared.appearance = .dark
+        defer { XCUIDevice.shared.appearance = .light }
+
+        let app = XCUIApplication()
+        app.launch()
+
+        attachScreenshot(app, name: "10-dark-hoje")
+
+        for (tabLabel, fileName) in [("Dieta", "11-dark-dieta"), ("Histórico", "12-dark-historico"), ("Perfil", "13-dark-perfil")] {
+            let tab = app.buttons[tabLabel]
+            if tab.waitForExistence(timeout: 5) {
+                tab.tap()
+                sleep(1)
+            }
+            attachScreenshot(app, name: fileName)
+        }
+    }
+
     /// Percorre o fluxo de importação de dieta (CNP) de ponta a ponta e
     /// captura cada etapa: colar texto, processando, revisão e aplicado.
     /// Complementa `testCaptureMainScreens`, que só navega pelas abas

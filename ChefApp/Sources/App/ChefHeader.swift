@@ -16,7 +16,7 @@ struct ChefHeader: View {
                     .frame(width: 34, height: 34)
                 Image(systemName: "fork.knife")
                     .font(.system(size: 14, weight: .bold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Color.chefOnPrimary)
             }
             VStack(alignment: .leading, spacing: 0) {
                 Text("CHEF")
