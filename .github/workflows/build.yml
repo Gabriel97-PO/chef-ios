@@ -47,10 +47,15 @@ jobs:
       - name: Pick a simulator device
         run: |
           DEVICE=$(xcrun simctl list devices available | grep -m1 -oE 'iPhone [0-9]+( Pro)?' || echo "iPhone 16")
-          # O UDID é necessário pro passo de tema escuro: o xcodebuild
-          # desliga o simulador quando termina, então "simctl ui booted"
-          # não acha dispositivo nenhum depois dos testes.
-          UDID=$(xcrun simctl list devices available | grep -m1 "$DEVICE (" | grep -oE '[0-9A-F]{8}-([0-9A-F]{4}-){3}[0-9A-F]{12}')
+          # O UDID vem do -showdestinations do próprio scheme, não do
+          # simctl: o simctl lista iPhones de runtimes antigos (iOS 18) que
+          # não servem de destino pro nosso target iOS 26, e pegar um deles
+          # dá "Unable to find a destination".
+          UDID=$(xcodebuild -showdestinations -scheme Chef 2>/dev/null \
+            | grep "platform:iOS Simulator" \
+            | grep "name:iPhone" \
+            | grep -oE 'id:[0-9A-Fa-f-]{36}' \
+            | head -n1 | cut -d: -f2)
           echo "device=$DEVICE" >> "$GITHUB_ENV"
           echo "udid=$UDID" >> "$GITHUB_ENV"
           echo "Using device: $DEVICE ($UDID)"
