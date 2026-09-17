@@ -3,6 +3,11 @@ name: Build & Test
 on:
   push:
   workflow_dispatch:
+    inputs:
+      dark_screenshots:
+        description: "Also capture dark-mode screenshots (roda o app de novo do zero, deixa o CI mais lento — só liga quando precisar checar o tema escuro)"
+        type: boolean
+        default: false
 
 jobs:
   chef-core:
@@ -79,8 +84,12 @@ jobs:
 
       # XCUIDevice.shared.appearance não surte efeito aqui — o app sobe no
       # tema claro de qualquer jeito. Quem troca a aparência de verdade é o
-      # simctl, daí a classe de teste escura rodar num passo próprio.
+      # simctl, daí a classe de teste escura rodar num passo próprio — que
+      # reabre o simulador e roda a suíte inteira de novo do zero, dobrando
+      # o tempo desse job. Por isso é opt-in (workflow_dispatch com
+      # dark_screenshots=true), não roda em todo push.
       - name: Dark mode screenshots
+        if: github.event_name == 'workflow_dispatch' && inputs.dark_screenshots == true
         run: |
           rm -rf build/DarkResults.xcresult
           xcrun simctl boot "$udid" || true
@@ -95,14 +104,17 @@ jobs:
 
       - name: Export screenshots from the UI test result bundles
         run: |
-          mkdir -p screenshots/light screenshots/dark
+          mkdir -p screenshots/light
           xcrun xcresulttool export attachments \
             --path build/TestResults.xcresult \
             --output-path screenshots/light
-          xcrun xcresulttool export attachments \
-            --path build/DarkResults.xcresult \
-            --output-path screenshots/dark
-          ls -la screenshots/light screenshots/dark
+          if [ -d build/DarkResults.xcresult ]; then
+            mkdir -p screenshots/dark
+            xcrun xcresulttool export attachments \
+              --path build/DarkResults.xcresult \
+              --output-path screenshots/dark
+          fi
+          ls -la screenshots
 
       - name: Upload screenshots
         uses: actions/upload-artifact@v4
