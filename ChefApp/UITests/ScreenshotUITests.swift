@@ -33,9 +33,13 @@ final class ScreenshotUITests: XCTestCase {
     func testCaptureMainScreensDarkMode() throws {
         XCUIDevice.shared.appearance = .dark
         defer { XCUIDevice.shared.appearance = .light }
+        // A troca de aparência no simulador não é sincrona — lançar o app
+        // imediatamente pegava ele ainda no tema claro.
+        sleep(3)
 
         let app = XCUIApplication()
         app.launch()
+        sleep(1)
 
         attachScreenshot(app, name: "10-dark-hoje")
 

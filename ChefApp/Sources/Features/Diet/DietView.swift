@@ -16,6 +16,7 @@ struct DietView: View {
     @Query(sort: \SDRecipe.name) private var recipes: [SDRecipe]
     @Query(sort: \SDFood.name) private var foods: [SDFood]
     @Query(sort: \SDDietVersion.importedAt, order: .reverse) private var dietVersions: [SDDietVersion]
+    @Query(sort: \SDWeightEntry.date) private var weights: [SDWeightEntry]
 
     @State private var tab: DietTab = .meta
     @State private var showImport = false
@@ -50,6 +51,11 @@ struct DietView: View {
                     switch tab {
                     case .meta:
                         if let profile = profiles.first {
+                            GoalCalculatorCard(
+                                profile: profile,
+                                currentWeightKg: weights.last?.weightKg,
+                                hasActiveDiet: activeDiet != nil
+                            )
                             GoalForm(profile: profile)
                         }
                     case .fixas:
@@ -77,8 +83,10 @@ private struct GoalForm: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
+            Label("Minhas metas", systemImage: "target")
+                .font(.title3.weight(.bold))
             HStack(spacing: 12) {
-                NumberField(label: "Calorias (kcal)", value: $profile.goal.calories, highlight: true)
+                NumberField(label: "Meta diária (kcal)", value: $profile.goal.calories, highlight: true)
                 NumberField(label: "Proteína (g)", value: $profile.goal.protein, highlight: true)
             }
             Text("OPCIONAIS")

@@ -15,11 +15,68 @@ final class SDUserProfile {
     var startingWeight: Double?
     var createdAt: Date
 
-    init(name: String, goal: DailyGoal, startingWeight: Double? = nil, createdAt: Date = Date()) {
+    // Medidas pro cálculo de metabolismo basal (roadmap itens 6 e 8).
+    // Opcionais porque o app funciona sem elas — quem tem dieta prescrita
+    // por nutricionista não precisa da estimativa.
+    var heightCm: Double?
+    var age: Int?
+    var sexRaw: String
+    var activityRaw: String
+    var objectiveRaw: String
+
+    init(
+        name: String,
+        goal: DailyGoal,
+        startingWeight: Double? = nil,
+        createdAt: Date = Date(),
+        heightCm: Double? = nil,
+        age: Int? = nil,
+        sex: BiologicalSex = .unspecified,
+        activity: ActivityLevel = .sedentary,
+        objective: WeightObjective = .lose
+    ) {
         self.name = name
         self.goal = goal
         self.startingWeight = startingWeight
         self.createdAt = createdAt
+        self.heightCm = heightCm
+        self.age = age
+        self.sexRaw = sex.rawValue
+        self.activityRaw = activity.rawValue
+        self.objectiveRaw = objective.rawValue
+    }
+
+    // Enums ficam como String no banco pra não travar a migração leve do
+    // SwiftData caso um caso novo entre depois.
+    var sex: BiologicalSex {
+        get { BiologicalSex(rawValue: sexRaw) ?? .unspecified }
+        set { sexRaw = newValue.rawValue }
+    }
+
+    var activity: ActivityLevel {
+        get { ActivityLevel(rawValue: activityRaw) ?? .sedentary }
+        set { activityRaw = newValue.rawValue }
+    }
+
+    var objective: WeightObjective {
+        get { WeightObjective(rawValue: objectiveRaw) ?? .lose }
+        set { objectiveRaw = newValue.rawValue }
+    }
+
+    /// Monta as medidas pro `EnergyEngine`. O peso vem do último registro
+    /// da balança, não de um campo digitado à parte — assim a estimativa
+    /// acompanha o peso real sem o usuário ter que atualizar em dois lugares.
+    func bodyMetrics(currentWeightKg: Double?) -> BodyMetrics? {
+        guard let weight = currentWeightKg, let heightCm, let age else { return nil }
+        let metrics = BodyMetrics(
+            weightKg: weight,
+            heightCm: heightCm,
+            age: age,
+            sex: sex,
+            activity: activity,
+            objective: objective
+        )
+        return metrics.isComplete ? metrics : nil
     }
 }
 

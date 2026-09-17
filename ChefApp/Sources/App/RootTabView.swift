@@ -24,6 +24,9 @@ struct RootTabView: View {
                     .padding(.horizontal, 20)
                     .padding(.top, 8)
             }
+            // Tinge os controles de sistema (botões, pickers, cursor) com a
+            // cor da marca em vez do azul padrão do iOS.
+            .tint(Color.chefPrimary)
             .onOpenURL { url in
                 if let tab = ChefTab(rawValue: url.host ?? "") {
                     selection = tab
