@@ -14,7 +14,7 @@ struct MealRemindersCard: View {
         times.sorted { ($0.hour, $0.minute) < ($1.hour, $1.minute) }
     }
 
-    private var anyEnabled: Bool { times.contains(\.reminderEnabled) }
+    private var anyEnabled: Bool { times.contains { $0.reminderEnabled } }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {

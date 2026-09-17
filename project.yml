@@ -28,6 +28,8 @@ targets:
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: false
         NSCameraUsageDescription: "O Chef usa a câmera para escanear tabelas nutricionais e identificar se um produto cabe na sua dieta."
+        NSHealthShareUsageDescription: "O Chef lê seu peso e percentual de gordura do Apple Saúde para acompanhar sua evolução com os dados da sua balança."
+        NSHealthUpdateUsageDescription: "O Chef escreve no Apple Saúde as calorias e nutrientes que você registrou, para ficarem junto dos seus outros dados de saúde."
         CFBundleURLTypes:
           - CFBundleURLName: com.chef.app
             CFBundleURLSchemes: [chef]

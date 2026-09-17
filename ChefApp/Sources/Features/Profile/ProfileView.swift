@@ -19,6 +19,7 @@ struct ProfileView: View {
                         NameCard(profile: profile)
                     }
                     WeightCard(weights: weights)
+                    AppleHealthCard()
                     MealRemindersCard()
                     AboutCard()
                 }

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Entitlement de HealthKit (roadmap item 2).
+
+  NÃO está ativo de propósito. O arquivo fica com a extensão
+  ".disabled" porque ligar isso hoje quebraria a instalação do app.
+
+  Por quê: HealthKit exige que a capability esteja habilitada no App ID
+  no portal da Apple, e isso só existe com o Apple Developer Program
+  pago (US$ 99/ano). Num sideload assinado com Apple ID gratuito
+  (AltStore/SideStore), o perfil de provisionamento gerado não pode
+  conter este entitlement — e um app cujos entitlements não casam com o
+  perfil simplesmente não instala. Ou seja: ligar isso agora trocaria
+  "Apple Saúde não funciona" por "o app inteiro não abre".
+
+  Como ligar quando a conta paga existir:
+  1. renomear este arquivo para "Chef.entitlements";
+  2. em project.yml, no target Chef, adicionar:
+         entitlements:
+           path: Chef.entitlements
+  3. habilitar HealthKit no App ID em developer.apple.com.
+
+  O código da integração (HealthKitService, AppleHealthCard) já está
+  pronto e tratando a ausência da permissão — a UI explica a situação em
+  vez de falhar em silêncio.
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>com.apple.developer.healthkit</key>
+	<true/>
+	<key>com.apple.developer.healthkit.access</key>
+	<array/>
+</dict>
+</plist>
