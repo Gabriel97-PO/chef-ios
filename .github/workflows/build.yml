@@ -79,3 +79,52 @@ jobs:
         with:
           name: chef-screenshots
           path: screenshots/**
+
+  chef-ipa:
+    name: Chef app (device .ipa for sideloading)
+    runs-on: macos-15
+    needs: chef-core
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select latest Xcode
+        run: |
+          LATEST=$(ls -d /Applications/Xcode*.app | sort -V | tail -n1)
+          echo "Selecting $LATEST"
+          sudo xcode-select -s "$LATEST/Contents/Developer"
+          xcodebuild -version
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      # Sem conta de Apple Developer, não há como assinar de verdade no CI.
+      # AD_HOC_CODE_SIGNING_ALLOWED=YES gera uma assinatura fake local (só
+      # pra satisfazer o formato do binário) — é o AltServer quem assina de
+      # verdade com o Apple ID do usuário no momento da instalação.
+      - name: Archive for a real device (unsigned)
+        run: |
+          xcodebuild archive \
+            -scheme Chef \
+            -archivePath build/Chef.xcarchive \
+            -destination "generic/platform=iOS" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            AD_HOC_CODE_SIGNING_ALLOWED=YES
+
+      - name: Package .ipa
+        run: |
+          mkdir -p build/Payload
+          cp -R build/Chef.xcarchive/Products/Applications/Chef.app build/Payload/
+          cd build && zip -r Chef.ipa Payload
+          cd ..
+          ls -la build/Chef.ipa
+
+      - name: Upload .ipa
+        uses: actions/upload-artifact@v4
+        with:
+          name: chef-ipa
+          path: build/Chef.ipa
