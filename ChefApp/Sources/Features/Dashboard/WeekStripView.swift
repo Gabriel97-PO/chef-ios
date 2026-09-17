@@ -90,7 +90,7 @@ struct WeekStripView: View {
                     }
                     Text("\(dayNumber)")
                         .font(.system(size: 14, weight: isSelected ? .bold : .medium))
-                        .foregroundStyle(isSelected ? .white : (isFuture ? .tertiary : .primary))
+                        .foregroundStyle(isSelected ? Color.white : (isFuture ? Color.secondary : Color.primary))
                 }
             }
             .opacity(isFuture ? 0.35 : 1)
