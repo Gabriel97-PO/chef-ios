@@ -175,6 +175,28 @@ private struct FixedMealsTab: View {
                         .foregroundStyle(.secondary)
                     Text("~\(Int(totals.calories)) kcal · ~\(totals.protein.formatted(.number.precision(.fractionLength(1))))g proteína")
                         .font(.caption.weight(.semibold))
+
+                    // Horário ao qual essa refeição pertence — é o que faz
+                    // ela aparecer na aba Hoje (roadmap item 5). O nome da
+                    // dieta importada costuma dizer isso ("ALMOÇO"), mas
+                    // quando não diz, dá pra escolher aqui.
+                    HStack(spacing: 6) {
+                        Image(systemName: "clock")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                        Picker("Horário", selection: Binding(
+                            get: { meal.slot },
+                            set: { meal.slot = $0; try? context.save() }
+                        )) {
+                            Text("Sem horário").tag(MealSlot?.none)
+                            ForEach(MealSlot.allCases) { slot in
+                                Text(slot.label).tag(MealSlot?.some(slot))
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        .font(.caption)
+                    }
+
                     Button("Adicionar ao dia") { addToDay(meal) }
                         .font(.subheadline.weight(.bold))
                         .frame(maxWidth: .infinity)

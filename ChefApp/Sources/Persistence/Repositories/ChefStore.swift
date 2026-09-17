@@ -99,8 +99,8 @@ enum FixedMealStore {
     }
 
     @discardableResult
-    static func create(name: String, items: [FoodEntry], in context: ModelContext) -> SDFixedMeal {
-        let meal = SDFixedMeal(name: name, items: items)
+    static func create(name: String, items: [FoodEntry], slot: MealSlot? = nil, in context: ModelContext) -> SDFixedMeal {
+        let meal = SDFixedMeal(name: name, items: items, slot: slot ?? MealSlot.inferred(fromName: name))
         context.insert(meal)
         try? context.save()
         return meal

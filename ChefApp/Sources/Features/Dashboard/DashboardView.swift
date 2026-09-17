@@ -13,6 +13,7 @@ struct DashboardView: View {
     @Environment(\.modelContext) private var context
     @Query private var profiles: [SDUserProfile]
     @Query private var meals: [SDMealEntry]
+    @Query(sort: \SDFixedMeal.name) private var fixedMeals: [SDFixedMeal]
     @ScaledMetric(relativeTo: .largeTitle) private var heroSize: CGFloat = 64
 
     @State private var selectedDate = Date()
@@ -75,7 +76,7 @@ struct DashboardView: View {
                                 MetricChip(icon: "bolt.fill", value: "\(Int(max(0, budget.proteinRemaining).rounded()))g", label: "proteína restante", tint: .chefSuccess)
                             }
 
-                            MealsSection(meals: mealsForSelectedDate) { slot in
+                            MealsSection(meals: mealsForSelectedDate, fixedMeals: fixedMeals) { slot in
                                 Haptics.selection()
                                 detailSlot = slot
                             }
@@ -95,6 +96,7 @@ struct DashboardView: View {
             MealDetailSheet(
                 slot: slot,
                 meal: mealsForSelectedDate.first { $0.slot == slot },
+                dateKey: selectedDateKey,
                 dateLabel: isToday ? "hoje" : "em \(dayLabel(selectedDate))"
             )
         }
@@ -130,6 +132,7 @@ private struct MetricChip: View {
 
 private struct MealsSection: View {
     let meals: [SDMealEntry]
+    let fixedMeals: [SDFixedMeal]
     let onSelect: (MealSlot) -> Void
 
     private static let order: [MealSlot] = [.cafeDaManha, .almoco, .lanche, .posTreino, .jantar, .outro]
@@ -140,9 +143,12 @@ private struct MealsSection: View {
                 .font(.title3.weight(.bold))
 
             ForEach(Self.order, id: \.self) { slot in
-                let meal = meals.first { $0.slot == slot }
-                MealRow(slot: slot, meal: meal)
-                    .onTapGesture { onSelect(slot) }
+                MealRow(
+                    slot: slot,
+                    meal: meals.first { $0.slot == slot },
+                    planned: fixedMeals.first { $0.slot == slot }
+                )
+                .onTapGesture { onSelect(slot) }
             }
         }
     }
@@ -151,6 +157,8 @@ private struct MealsSection: View {
 private struct MealRow: View {
     let slot: MealSlot
     let meal: SDMealEntry?
+    /// Refeição fixa da dieta amarrada a esse horário (roadmap item 5).
+    let planned: SDFixedMeal?
 
     private var totals: NutritionFacts? {
         guard let meal, !meal.items.isEmpty else { return nil }
@@ -162,10 +170,17 @@ private struct MealRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(slot.label)
                     .font(.subheadline.weight(.semibold))
-                if let totals {
-                    Text(itemsPreview)
+                if totals != nil {
+                    Text(meal?.items.map(\.name).joined(separator: ", ") ?? "")
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
+                        .lineLimit(1)
+                } else if let planned {
+                    // Nada registrado, mas a dieta prescreve algo pra esse
+                    // horário: mostra o plano em vez de só "nada registrado".
+                    Label(planned.items.map(\.name).joined(separator: ", "), systemImage: "doc.text")
+                        .font(.caption2)
+                        .foregroundStyle(Color.chefPrimary)
                         .lineLimit(1)
                 }
             }
@@ -175,7 +190,7 @@ private struct MealRow: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             } else {
-                Text("Nada registrado")
+                Text(planned == nil ? "Nada registrado" : "Planejado")
                     .font(.caption)
                     .foregroundStyle(.tertiary)
             }
@@ -185,10 +200,6 @@ private struct MealRow: View {
         }
         .chefGlassCard(cornerRadius: 16, padding: 14)
         .contentShape(Rectangle())
-    }
-
-    private var itemsPreview: String {
-        meal?.items.map(\.name).joined(separator: ", ") ?? ""
     }
 }
 

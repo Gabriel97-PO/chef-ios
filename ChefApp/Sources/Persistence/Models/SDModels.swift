@@ -190,12 +190,22 @@ final class SDFixedMeal {
     var name: String
     var items: [FoodEntry]
     var createdAt: Date
+    /// Refeição do dia à qual essa refeição fixa pertence, pra aparecer no
+    /// horário certo na aba Hoje (roadmap item 5). Opcional porque o nome
+    /// pode não casar com nenhum horário conhecido ("Refeição livre").
+    var slotRaw: String?
 
-    init(id: String = UUID().uuidString, name: String, items: [FoodEntry], createdAt: Date = Date()) {
+    init(id: String = UUID().uuidString, name: String, items: [FoodEntry], createdAt: Date = Date(), slot: MealSlot? = nil) {
         self.id = id
         self.name = name
         self.items = items
         self.createdAt = createdAt
+        self.slotRaw = slot?.rawValue
+    }
+
+    var slot: MealSlot? {
+        get { slotRaw.flatMap(MealSlot.init(rawValue:)) }
+        set { slotRaw = newValue?.rawValue }
     }
 
     var asFixedMeal: FixedMeal {

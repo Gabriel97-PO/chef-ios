@@ -64,15 +64,34 @@ jobs:
             -scheme Chef \
             -destination "platform=iOS Simulator,name=$device" \
             -derivedDataPath build \
+            -skip-testing:ChefUITests/DarkModeScreenshotUITests \
             -resultBundlePath build/TestResults.xcresult
 
-      - name: Export screenshots from the UI test result bundle
+      # XCUIDevice.shared.appearance não surte efeito aqui — o app sobe no
+      # tema claro de qualquer jeito. Quem troca a aparência de verdade é o
+      # simctl, daí a classe de teste escura rodar num passo próprio.
+      - name: Dark mode screenshots
         run: |
-          mkdir -p screenshots
+          rm -rf build/DarkResults.xcresult
+          xcrun simctl ui booted appearance dark
+          xcodebuild test \
+            -scheme Chef \
+            -destination "platform=iOS Simulator,name=$device" \
+            -derivedDataPath build \
+            -only-testing:ChefUITests/DarkModeScreenshotUITests \
+            -resultBundlePath build/DarkResults.xcresult
+          xcrun simctl ui booted appearance light
+
+      - name: Export screenshots from the UI test result bundles
+        run: |
+          mkdir -p screenshots/light screenshots/dark
           xcrun xcresulttool export attachments \
             --path build/TestResults.xcresult \
-            --output-path screenshots
-          ls -la screenshots
+            --output-path screenshots/light
+          xcrun xcresulttool export attachments \
+            --path build/DarkResults.xcresult \
+            --output-path screenshots/dark
+          ls -la screenshots/light screenshots/dark
 
       - name: Upload screenshots
         uses: actions/upload-artifact@v4
