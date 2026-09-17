@@ -30,6 +30,8 @@ struct HistoryView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
+                    ChefHeader(title: "Histórico")
+
                     if meals.isEmpty && weights.isEmpty {
                         ContentUnavailableView(
                             "Sem histórico ainda",
@@ -38,13 +40,26 @@ struct HistoryView: View {
                         )
                         .padding(.top, 60)
                     } else {
-                        ConsumptionCard(days: consumptionDays, goal: goal)
-                        WeightTrendCard(weights: weights, entries: weightEntries)
+                        NavigationLink {
+                            ConsumptionHistoryDetailView()
+                        } label: {
+                            ConsumptionCard(days: consumptionDays, goal: goal)
+                        }
+                        .buttonStyle(.plain)
+
+                        NavigationLink {
+                            WeightHistoryDetailView()
+                        } label: {
+                            WeightTrendCard(weights: weights, entries: weightEntries)
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
                 .padding()
+                .padding(.bottom, 90)
             }
-            .navigationTitle("Histórico")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar(.hidden, for: .navigationBar)
         }
     }
 }
@@ -75,6 +90,9 @@ private struct ConsumptionCard: View {
                 Text("média \(Int(averageCalories)) kcal")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
+                Image(systemName: "chevron.right")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.tertiary)
             }
 
             Chart {
@@ -122,6 +140,9 @@ private struct WeightTrendCard: View {
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(Color.chefPrimary)
                 }
+                Image(systemName: "chevron.right")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.tertiary)
             }
 
             if weights.isEmpty {

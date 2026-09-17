@@ -34,7 +34,7 @@ struct ChefTabBar: View {
 
                 scanButton
                     .glassEffectID("scan", in: glassNamespace)
-                    .offset(y: -22)
+                    .offset(y: -8)
             }
         }
     }
@@ -73,13 +73,13 @@ struct ChefTabBar: View {
             }
         } label: {
             Image(systemName: "camera.fill")
-                .font(.system(size: 25, weight: .semibold))
+                .font(.system(size: 21, weight: .semibold))
                 .foregroundStyle(.white)
-                .frame(width: 64, height: 64)
+                .frame(width: 52, height: 52)
         }
         .buttonStyle(.plain)
         .glassEffect(.regular.tint(.chefPrimary).interactive(), in: .circle)
-        .shadow(color: Color.chefPrimary.opacity(0.35), radius: isSelected ? 18 : 12, y: 6)
+        .shadow(color: Color.chefPrimary.opacity(0.3), radius: isSelected ? 14 : 9, y: 4)
         .scaleEffect(isSelected ? 1.05 : 1.0)
         .accessibilityLabel("Scan")
         .accessibilityAddTraits(isSelected ? [.isSelected] : [])

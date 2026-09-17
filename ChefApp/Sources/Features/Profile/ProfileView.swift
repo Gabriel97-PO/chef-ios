@@ -13,6 +13,8 @@ struct ProfileView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
+                    ChefHeader(title: "Perfil")
+
                     if let profile = profiles.first {
                         NameCard(profile: profile)
                     }
@@ -20,8 +22,10 @@ struct ProfileView: View {
                     AboutCard()
                 }
                 .padding()
+                .padding(.bottom, 90)
             }
-            .navigationTitle("Perfil")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar(.hidden, for: .navigationBar)
         }
     }
 }
@@ -68,41 +72,60 @@ private struct WeightCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            HStack {
-                Text("Meu peso").font(.title3.weight(.bold))
-                Spacer()
-            }
+            NavigationLink {
+                WeightHistoryDetailView()
+            } label: {
+                VStack(alignment: .leading, spacing: 14) {
+                    HStack {
+                        Text("Meu peso").font(.title3.weight(.bold))
+                        Spacer()
+                        Text("Ver histórico")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(Color.chefPrimary)
+                        Image(systemName: "chevron.right")
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(.tertiary)
+                    }
+                    .foregroundStyle(.primary)
 
-            HStack(spacing: 10) {
-                stat(label: "atual (kg)", value: latest)
-                stat(label: "média 7d (kg)", value: average7d, tint: .chefPrimary)
-                stat(label: "desde o início", value: change, signed: true)
+                    HStack(spacing: 10) {
+                        stat(label: "atual (kg)", value: latest)
+                        stat(label: "média 7d (kg)", value: average7d, tint: .chefPrimary)
+                        stat(label: "desde o início", value: change, signed: true)
+                    }
+
+                    if !weights.isEmpty {
+                        HStack(alignment: .bottom, spacing: 4) {
+                            ForEach(weights.suffix(14)) { entry in
+                                Capsule()
+                                    .fill(Color.chefPrimary.gradient)
+                                    .frame(width: 8, height: barHeight(for: entry.weightKg))
+                            }
+                        }
+                        .frame(height: 50, alignment: .bottom)
+                        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: weights.map(\.weightKg))
+                    }
+                }
             }
+            .buttonStyle(.plain)
 
             HStack {
                 TextField("Peso de hoje (kg)", text: $input)
                     .keyboardType(.decimalPad)
                     .padding(10)
                     .background(.thinMaterial, in: .rect(cornerRadius: 10))
-                Button(logged ? "✓" : "Registrar") { logWeight() }
-                    .font(.subheadline.weight(.bold))
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                    .background(Color.chefPrimary, in: .rect(cornerRadius: 10))
-                    .foregroundStyle(.white)
-            }
-
-            if !weights.isEmpty {
-                HStack(alignment: .bottom, spacing: 4) {
-                    ForEach(weights.suffix(14)) { entry in
-                        VStack(spacing: 2) {
-                            Capsule()
-                                .fill(Color.chefPrimary)
-                                .frame(width: 8, height: barHeight(for: entry.weightKg))
-                        }
+                Button {
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                        logWeight()
                     }
+                } label: {
+                    Text(logged ? "✓" : "Registrar")
+                        .font(.subheadline.weight(.bold))
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .background(logged ? Color.chefSuccess : Color.chefPrimary, in: .rect(cornerRadius: 10))
+                        .foregroundStyle(.white)
                 }
-                .frame(height: 50, alignment: .bottom)
             }
         }
         .chefGlassCard()

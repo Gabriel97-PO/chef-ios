@@ -139,4 +139,11 @@ enum DateKey {
     }
 
     static func today() -> String { string(from: Date()) }
+
+    static func date(from key: String) -> Date? {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.timeZone = .current
+        return formatter.date(from: key)
+    }
 }

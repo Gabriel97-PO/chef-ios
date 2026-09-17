@@ -26,6 +26,12 @@ struct DietView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
+                    HStack(alignment: .center) {
+                        ChefHeader(title: "Dieta")
+                        Button("Importar") { showImport = true }
+                            .font(.subheadline.weight(.semibold))
+                    }
+
                     if let activeDiet {
                         Text("Dieta ativa: **\(activeDiet.label)** · importada em \(activeDiet.importedAt.formatted(date: .abbreviated, time: .omitted))")
                             .font(.caption)
@@ -49,13 +55,10 @@ struct DietView: View {
                     }
                 }
                 .padding()
+                .padding(.bottom, 90)
             }
-            .navigationTitle("Dieta")
-            .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    Button("Importar") { showImport = true }
-                }
-            }
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar(.hidden, for: .navigationBar)
             .sheet(isPresented: $showImport) {
                 DietImportView()
             }

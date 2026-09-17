@@ -5,21 +5,29 @@ import ChefCore
 /// Tela "Hoje" — responde "como está meu dia?" com hierarquia visual clara
 /// (seção 7 do plano de migração). Lê dados reais do SwiftData agora —
 /// nada mais fixo como na primeira versão da Fase 1.
+///
+/// O título fixo "Hoje" virou um seletor de dias da semana (`WeekStripView`,
+/// estilo Strava): dá pra consultar o histórico de refeições de qualquer
+/// dia da semana atual ou de semanas anteriores, não só o dia corrente.
 struct DashboardView: View {
     @Environment(\.modelContext) private var context
     @Query private var profiles: [SDUserProfile]
     @Query private var meals: [SDMealEntry]
     @ScaledMetric(relativeTo: .largeTitle) private var heroSize: CGFloat = 64
 
-    private var profile: SDUserProfile? { profiles.first }
-    private let today = DateKey.today()
+    @State private var selectedDate = Date()
+    @State private var detailSlot: MealSlot?
 
-    private var todaysMeals: [SDMealEntry] {
-        meals.filter { $0.date == today }
+    private var profile: SDUserProfile? { profiles.first }
+    private var selectedDateKey: String { DateKey.string(from: selectedDate) }
+    private var isToday: Bool { Calendar.current.isDateInToday(selectedDate) }
+
+    private var mealsForSelectedDate: [SDMealEntry] {
+        meals.filter { $0.date == selectedDateKey }
     }
 
     private var consumed: NutritionFacts {
-        NutritionEngine.sumMeals(todaysMeals.map(\.asMealEntry))
+        NutritionEngine.sumMeals(mealsForSelectedDate.map(\.asMealEntry))
     }
 
     private var budget: NutritionEngine.RemainingBudget? {
@@ -30,63 +38,73 @@ struct DashboardView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                if let profile, let budget {
-                    let goal = profile.goal
-                    VStack(alignment: .leading, spacing: 20) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(greeting)
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                            Text(profile.name)
-                                .font(.system(size: 28, weight: .black, design: .rounded))
-                        }
+                VStack(alignment: .leading, spacing: 16) {
+                    ChefHeader(title: "Hoje")
 
-                        VStack(spacing: 6) {
-                            Text("\(Int(consumed.calories))")
-                                .font(.system(size: heroSize, weight: .black, design: .rounded))
-                                .monospacedDigit()
-                            Text("de \(Int(goal.calories)) kcal")
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
+                    WeekStripView(selectedDate: $selectedDate)
 
-                            HStack {
-                                Text("Proteína")
-                                    .font(.footnote.weight(.semibold))
-                                Spacer()
-                                Text("\(consumed.protein.formatted(.number.precision(.fractionLength(1)))) / \(Int(goal.protein)) g")
-                                    .font(.footnote)
+                    if let profile, let budget {
+                        let goal = profile.goal
+                        VStack(alignment: .leading, spacing: 20) {
+                            VStack(spacing: 6) {
+                                Text(isToday ? "Hoje" : dayLabel(selectedDate))
+                                    .font(.subheadline.weight(.semibold))
                                     .foregroundStyle(.secondary)
+                                Text("\(Int(consumed.calories))")
+                                    .font(.system(size: heroSize, weight: .black, design: .rounded))
+                                    .monospacedDigit()
+                                Text("de \(Int(goal.calories)) kcal")
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+
+                                HStack {
+                                    Text("Proteína")
+                                        .font(.footnote.weight(.semibold))
+                                    Spacer()
+                                    Text("\(consumed.protein.formatted(.number.precision(.fractionLength(1)))) / \(Int(goal.protein)) g")
+                                        .font(.footnote)
+                                        .foregroundStyle(.secondary)
+                                }
+                                .padding(.top, 12)
                             }
-                            .padding(.top, 12)
-                        }
-                        .padding(24)
-                        .frame(maxWidth: .infinity)
-                        .glassEffect(in: .rect(cornerRadius: 28))
+                            .frame(maxWidth: .infinity)
+                            .chefGlassCard(cornerRadius: 28, padding: 24)
 
-                        HStack(spacing: 12) {
-                            MetricChip(icon: "flame.fill", value: "\(Int(budget.caloriesRemaining))", label: "kcal restantes", tint: .chefPrimary)
-                            MetricChip(icon: "bolt.fill", value: "\(Int(max(0, budget.proteinRemaining).rounded()))g", label: "proteína restante", tint: .chefSuccess)
-                        }
+                            HStack(spacing: 12) {
+                                MetricChip(icon: "flame.fill", value: "\(Int(budget.caloriesRemaining))", label: "kcal restantes", tint: .chefPrimary)
+                                MetricChip(icon: "bolt.fill", value: "\(Int(max(0, budget.proteinRemaining).rounded()))g", label: "proteína restante", tint: .chefSuccess)
+                            }
 
-                        MealsSection(meals: todaysMeals)
+                            MealsSection(meals: mealsForSelectedDate) { slot in
+                                Haptics.selection()
+                                detailSlot = slot
+                            }
+                        }
+                    } else {
+                        ProgressView()
+                            .padding(.top, 100)
                     }
-                    .padding()
-                } else {
-                    ProgressView()
-                        .padding(.top, 100)
                 }
+                .padding()
+                .padding(.bottom, 90)
             }
-            .navigationTitle("Hoje")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar(.hidden, for: .navigationBar)
+        }
+        .sheet(item: $detailSlot) { slot in
+            MealDetailSheet(
+                slot: slot,
+                meal: mealsForSelectedDate.first { $0.slot == slot },
+                dateLabel: isToday ? "hoje" : "em \(dayLabel(selectedDate))"
+            )
         }
     }
 
-    private var greeting: String {
-        let hour = Calendar.current.component(.hour, from: Date())
-        switch hour {
-        case ..<12: return "Bom dia"
-        case ..<18: return "Boa tarde"
-        default: return "Boa noite"
-        }
+    private func dayLabel(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "pt_BR")
+        formatter.dateFormat = "d 'de' MMMM"
+        return formatter.string(from: date)
     }
 }
 
@@ -112,6 +130,7 @@ private struct MetricChip: View {
 
 private struct MealsSection: View {
     let meals: [SDMealEntry]
+    let onSelect: (MealSlot) -> Void
 
     private static let order: [MealSlot] = [.cafeDaManha, .almoco, .lanche, .posTreino, .jantar, .outro]
 
@@ -123,6 +142,7 @@ private struct MealsSection: View {
             ForEach(Self.order, id: \.self) { slot in
                 let meal = meals.first { $0.slot == slot }
                 MealRow(slot: slot, meal: meal)
+                    .onTapGesture { onSelect(slot) }
             }
         }
     }
@@ -139,8 +159,16 @@ private struct MealRow: View {
 
     var body: some View {
         HStack {
-            Text(slot.label)
-                .font(.subheadline.weight(.semibold))
+            VStack(alignment: .leading, spacing: 2) {
+                Text(slot.label)
+                    .font(.subheadline.weight(.semibold))
+                if let totals {
+                    Text(itemsPreview)
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                        .lineLimit(1)
+                }
+            }
             Spacer()
             if let totals {
                 Text("\(Int(totals.calories)) kcal · \(totals.protein.formatted(.number.precision(.fractionLength(1))))g")
@@ -151,8 +179,16 @@ private struct MealRow: View {
                     .font(.caption)
                     .foregroundStyle(.tertiary)
             }
+            Image(systemName: "chevron.right")
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(.tertiary)
         }
         .chefGlassCard(cornerRadius: 16, padding: 14)
+        .contentShape(Rectangle())
+    }
+
+    private var itemsPreview: String {
+        meal?.items.map(\.name).joined(separator: ", ") ?? ""
     }
 }
 
