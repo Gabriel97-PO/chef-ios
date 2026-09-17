@@ -13,9 +13,11 @@ targets:
   Chef:
     type: application
     platform: iOS
+    # O XcodeGen não tem chave "resources" — ela era ignorada em silêncio e
+    # o asset catalog (ícone do app) nunca ia pro bundle. Tudo entra em
+    # "sources", que classifica cada arquivo pelo tipo.
     sources:
       - path: ChefApp/Sources
-    resources:
       - path: ChefApp/Resources
     dependencies:
       - package: ChefCore
