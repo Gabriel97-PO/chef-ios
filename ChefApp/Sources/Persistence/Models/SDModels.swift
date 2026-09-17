@@ -213,6 +213,30 @@ final class SDFixedMeal {
     }
 }
 
+/// Horário de uma refeição e se ela lembra o usuário (roadmap item 10).
+/// Os horários padrão ficam de 3 em 3 horas, que é o intervalo pedido, mas
+/// cada um é editável — dieta é rotina, e rotina é pessoal.
+@Model
+final class SDMealTime {
+    @Attribute(.unique) var slotRaw: String
+    var hour: Int
+    var minute: Int
+    var reminderEnabled: Bool
+
+    init(slot: MealSlot, hour: Int, minute: Int = 0, reminderEnabled: Bool = true) {
+        self.slotRaw = slot.rawValue
+        self.hour = hour
+        self.minute = minute
+        self.reminderEnabled = reminderEnabled
+    }
+
+    var slot: MealSlot { MealSlot(rawValue: slotRaw) ?? .outro }
+
+    var timeLabel: String {
+        String(format: "%02d:%02d", hour, minute)
+    }
+}
+
 /// Uma dieta importada e aplicada (seção 28/38 do plano de migração).
 /// Versões antigas nunca são apagadas — só deixam de ser `active`.
 @Model

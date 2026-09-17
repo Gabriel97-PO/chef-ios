@@ -47,8 +47,13 @@ jobs:
       - name: Pick a simulator device
         run: |
           DEVICE=$(xcrun simctl list devices available | grep -m1 -oE 'iPhone [0-9]+( Pro)?' || echo "iPhone 16")
+          # O UDID é necessário pro passo de tema escuro: o xcodebuild
+          # desliga o simulador quando termina, então "simctl ui booted"
+          # não acha dispositivo nenhum depois dos testes.
+          UDID=$(xcrun simctl list devices available | grep -m1 "$DEVICE (" | grep -oE '[0-9A-F]{8}-([0-9A-F]{4}-){3}[0-9A-F]{12}')
           echo "device=$DEVICE" >> "$GITHUB_ENV"
-          echo "Using device: $DEVICE"
+          echo "udid=$UDID" >> "$GITHUB_ENV"
+          echo "Using device: $DEVICE ($UDID)"
 
       - name: Build for Simulator
         run: |
@@ -73,14 +78,15 @@ jobs:
       - name: Dark mode screenshots
         run: |
           rm -rf build/DarkResults.xcresult
-          xcrun simctl ui booted appearance dark
+          xcrun simctl boot "$udid" || true
+          xcrun simctl bootstatus "$udid" -b || true
+          xcrun simctl ui "$udid" appearance dark
           xcodebuild test \
             -scheme Chef \
-            -destination "platform=iOS Simulator,name=$device" \
+            -destination "platform=iOS Simulator,id=$udid" \
             -derivedDataPath build \
             -only-testing:ChefUITests/DarkModeScreenshotUITests \
             -resultBundlePath build/DarkResults.xcresult
-          xcrun simctl ui booted appearance light
 
       - name: Export screenshots from the UI test result bundles
         run: |

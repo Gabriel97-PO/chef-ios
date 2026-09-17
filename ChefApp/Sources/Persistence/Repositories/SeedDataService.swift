@@ -31,6 +31,24 @@ enum SeedDataService {
             try? context.save()
         }
 
+        // Horários de refeição de 3 em 3 horas (roadmap item 10). Os
+        // lembretes já nascem desligados: notificação é coisa que o usuário
+        // liga, não que o app impõe.
+        if (try? context.fetch(FetchDescriptor<SDMealTime>()))?.isEmpty ?? true {
+            let schedule: [(MealSlot, Int)] = [
+                (.cafeDaManha, 7),
+                (.lanche, 10),
+                (.almoco, 13),
+                (.posTreino, 16),
+                (.jantar, 19),
+                (.outro, 22),
+            ]
+            for (slot, hour) in schedule {
+                context.insert(SDMealTime(slot: slot, hour: hour, reminderEnabled: false))
+            }
+            try? context.save()
+        }
+
         if WeightStore.all(in: context).isEmpty {
             let sequence: [Double] = [120.8, 120.4, 120.7, 120.1, 119.9, 120.2, 119.8]
             let calendar = Calendar.current
