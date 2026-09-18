@@ -65,6 +65,18 @@ jobs:
           echo "udid=$UDID" >> "$GITHUB_ENV"
           echo "Using device: $DEVICE ($UDID)"
 
+      # Um simulador novo nesse runner nasce em modo escuro por padrão —
+      # sem forçar claro aqui, os screenshots e testes "normais" (que
+      # deveriam ser modo claro) saíam escuros de verdade. Só apareceu
+      # porque o passo de modo escuro, que antes deixava tudo de volta em
+      # claro no fim, virou opcional e passou a não rodar mais nos pushes
+      # normais.
+      - name: Force light appearance on the simulator
+        run: |
+          xcrun simctl boot "$udid" || true
+          xcrun simctl bootstatus "$udid" -b || true
+          xcrun simctl ui "$udid" appearance light
+
       - name: Build for Simulator
         run: |
           xcodebuild build \
