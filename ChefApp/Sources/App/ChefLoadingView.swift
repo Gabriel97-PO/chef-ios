@@ -138,8 +138,8 @@ private struct ChefLoadingParticle: View {
             .fill(Color.chefPrimary)
             .frame(width: 6, height: 6)
             .offset(
-                x: animate ? cos(angle * .pi / 180) * 96 : 0,
-                y: animate ? sin(angle * .pi / 180) * 96 : 0
+                x: animate ? CGFloat(cos(angle * .pi / 180)) * 96 : 0,
+                y: animate ? CGFloat(sin(angle * .pi / 180)) * 96 : 0
             )
             .opacity(animate ? 0 : 1)
             .onAppear {

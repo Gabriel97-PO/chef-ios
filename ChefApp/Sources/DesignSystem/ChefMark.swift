@@ -49,13 +49,18 @@ private struct ChefLeafShape: Shape {
 
     func path(in rect: CGRect) -> Path {
         let center = CGPoint(x: rect.minX + 0.756 * rect.width, y: rect.minY + 0.8201 * rect.height)
-        let angle = 32.0 * .pi / 180
+        // `cos`/`sin` direto em CGFloat é ambíguo (Darwin vs CoreGraphics
+        // disputam o overload) — calcula em Double, que resolve sem ambiguidade,
+        // e só converte pra CGFloat no resultado.
+        let angleRadians = 32.0 * Double.pi / 180
+        let cosA = CGFloat(cos(angleRadians))
+        let sinA = CGFloat(sin(angleRadians))
 
         let points = Self.localPoints.map { local -> CGPoint in
             let x = local.x * rect.width
             let y = local.y * rect.width
-            let rx = x * cos(angle) - y * sin(angle)
-            let ry = x * sin(angle) + y * cos(angle)
+            let rx = x * cosA - y * sinA
+            let ry = x * sinA + y * cosA
             return CGPoint(x: center.x + rx, y: center.y + ry)
         }
 
