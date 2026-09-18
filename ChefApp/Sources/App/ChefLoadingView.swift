@@ -177,7 +177,7 @@ struct ChefLoadingView: View {
         if reduceMotion {
             withAnimation(.easeOut(duration: 0.2)) { showCheck = true; checkScale = 1.0 }
         } else {
-            withAnimation(.spring(mass: 1, stiffness: 300, damping: 22)) {
+            withAnimation(.interpolatingSpring(mass: 1, stiffness: 300, damping: 22)) {
                 showCheck = true
                 checkScale = 1.0
             }
