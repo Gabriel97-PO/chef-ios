@@ -5,7 +5,8 @@ import UIKit
 ///
 /// O app tem duas identidades que trocam sozinhas com o tema do iPhone
 /// (roadmap item 9): claro = laranja da marca (#FF7A00, o mesmo do PWA);
-/// escuro = preto com verde neon. Não é o `.orange`/`.green` do sistema.
+/// escuro = preto com Volt Green (#CCFF00), a cor definida no fluxo de
+/// marca do ícone. Não é o `.orange`/`.green` do sistema.
 ///
 /// Usa `UIColor(dynamicProvider:)` em vez de `@Environment(\.colorScheme)`
 /// porque assim a cor se resolve sozinha em qualquer contexto — inclusive
@@ -15,7 +16,7 @@ extension Color {
     /// Acento primário: calorias, seleção, botões de ação.
     static let chefPrimary = chefDynamic(
         light: (1.0, 0.478, 0.0),      // #FF7A00
-        dark: (0.224, 1.0, 0.078)      // #39FF14
+        dark: (0.8, 1.0, 0.0)          // #CCFF00 — Volt Green
     )
 
     /// Acento secundário: proteína, confirmações.

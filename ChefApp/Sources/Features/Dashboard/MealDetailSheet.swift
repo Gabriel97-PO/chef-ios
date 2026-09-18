@@ -67,6 +67,7 @@ struct MealDetailSheet: View {
                     Button("Fechar") { dismiss() }
                 }
             }
+            .chefKeyboardDismissToolbar()
         }
     }
 
@@ -135,6 +136,7 @@ struct MealDetailSheet: View {
                         .font(.subheadline.weight(.semibold))
                         .frame(maxWidth: .infinity)
                         .padding()
+                        .contentShape(Rectangle())
                 }
                 .overlay(
                     RoundedRectangle(cornerRadius: 16)

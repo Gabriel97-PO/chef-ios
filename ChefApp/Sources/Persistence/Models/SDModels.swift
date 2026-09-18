@@ -18,11 +18,19 @@ final class SDUserProfile {
     // Medidas pro cálculo de metabolismo basal (roadmap itens 6 e 8).
     // Opcionais porque o app funciona sem elas — quem tem dieta prescrita
     // por nutricionista não precisa da estimativa.
+    //
+    // Os três campos raw têm valor padrão na própria declaração (não só no
+    // init) de propósito: é o que permite ao SwiftData migrar sozinho um
+    // banco que já existia antes desses campos nascerem. Sem o default
+    // aqui, um perfil já salvo no dispositivo não tem como ganhar esses
+    // valores na migração leve, e o ModelContainer falha ao abrir — foi
+    // exatamente isso que quebrou o app depois da fase de metabolismo
+    // basal: o perfil de teste já estava salvo no iPhone.
     var heightCm: Double?
     var age: Int?
-    var sexRaw: String
-    var activityRaw: String
-    var objectiveRaw: String
+    var sexRaw: String = BiologicalSex.unspecified.rawValue
+    var activityRaw: String = ActivityLevel.sedentary.rawValue
+    var objectiveRaw: String = WeightObjective.lose.rawValue
 
     init(
         name: String,

@@ -209,6 +209,7 @@ struct ScanResultSheet: View {
                 Button(slot.label) { addToDay(slot: slot) }
             }
         }
+        .chefKeyboardDismissToolbar()
     }
 
     private func addToDay(slot: MealSlot) {

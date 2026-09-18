@@ -69,6 +69,7 @@ struct DietView: View {
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar(.hidden, for: .navigationBar)
+            .chefKeyboardDismissToolbar()
             .sheet(isPresented: $showImport) {
                 DietImportView()
             }
@@ -230,6 +231,7 @@ private struct FixedMealsTab: View {
                 Button("+ Nova refeição fixa") { creating = true }
                     .frame(maxWidth: .infinity)
                     .padding()
+                    .contentShape(Rectangle())
                     .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(.secondary.opacity(0.3), style: StrokeStyle(lineWidth: 1, dash: [5])))
             }
         }
@@ -313,6 +315,7 @@ private struct RecipesTab: View {
                 Button("+ Nova receita") { creating = true }
                     .frame(maxWidth: .infinity)
                     .padding()
+                    .contentShape(Rectangle())
                     .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(.secondary.opacity(0.3), style: StrokeStyle(lineWidth: 1, dash: [5])))
             }
         }

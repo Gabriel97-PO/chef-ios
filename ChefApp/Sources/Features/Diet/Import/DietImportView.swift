@@ -42,6 +42,7 @@ struct DietImportView: View {
                     Button("Fechar") { dismiss() }
                 }
             }
+            .chefKeyboardDismissToolbar()
         }
     }
 

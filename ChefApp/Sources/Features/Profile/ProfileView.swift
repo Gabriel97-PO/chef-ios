@@ -28,6 +28,7 @@ struct ProfileView: View {
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar(.hidden, for: .navigationBar)
+            .chefKeyboardDismissToolbar()
         }
     }
 }
