@@ -14,6 +14,7 @@ final class ScreenshotUITests: XCTestCase {
     func testCaptureMainScreens() throws {
         let app = XCUIApplication()
         app.launch()
+        waitForSplash(app)
 
         attachScreenshot(app, name: "01-hoje")
 
@@ -34,6 +35,7 @@ final class ScreenshotUITests: XCTestCase {
     func testCaptureMealDetail() throws {
         let app = XCUIApplication()
         app.launch()
+        waitForSplash(app)
 
         // O card do almoço é o que recebe a dieta importada pelo outro teste.
         let almoco = app.staticTexts["Almoço"]
@@ -57,6 +59,7 @@ final class ScreenshotUITests: XCTestCase {
     func testCaptureDietImportFlow() throws {
         let app = XCUIApplication()
         app.launch()
+        waitForSplash(app)
 
         let dietaTab = app.buttons["Dieta"]
         guard dietaTab.waitForExistence(timeout: 5) else { return }
@@ -87,6 +90,13 @@ final class ScreenshotUITests: XCTestCase {
         let seeMyDietButton = app.buttons["Ver minha dieta"]
         _ = seeMyDietButton.waitForExistence(timeout: 5)
         attachScreenshot(app, name: "09-import-aplicado")
+    }
+
+    /// Espera a `ChefLoadingView` sumir (~3.4s de animação) antes de mexer
+    /// na tela — sem isso os primeiros screenshots/toques pegam a splash
+    /// em vez do app de verdade.
+    private func waitForSplash(_ app: XCUIApplication) {
+        _ = app.buttons["Hoje"].waitForExistence(timeout: 8)
     }
 
     private func attachScreenshot(_ app: XCUIApplication, name: String) {

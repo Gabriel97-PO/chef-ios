@@ -10,8 +10,17 @@ import SwiftUI
 /// pra fora da barra — a combinação de tint translúcido com sombra grande
 /// borrava a borda do círculo e parecia um respingo de tinta. Agora é
 /// preenchimento sólido, dentro da cápsula, como um item da barra.
+///
+/// A pílula de vidro atrás do item selecionado desliza entre as abas via
+/// `matchedGeometryEffect` — o mesmo efeito que o `Picker` nativo em
+/// `.segmented` já faz sozinho (visível no seletor de aba da tela Dieta),
+/// só que aqui recriado à mão porque a barra é uma `HStack` customizada,
+/// não um `Picker`. O Scanner fica de fora dessa pílula — ele já tem
+/// destaque próprio (círculo sólido) e teria proporção estranha dividindo
+/// espaço com um item quadrado como os outros.
 struct ChefTabBar: View {
     @Binding var selection: ChefTab
+    @Namespace private var highlightNamespace
 
     private let leadingItems: [ChefTabBarItem] = [
         .init(tab: .hoje, label: "Hoje", systemImage: "house.fill"),
@@ -44,18 +53,48 @@ struct ChefTabBar: View {
             }
         } label: {
             VStack(spacing: 3) {
-                Image(systemName: item.systemImage)
-                    .font(.system(size: 20, weight: isSelected ? .semibold : .regular))
+                icon(for: item, isSelected: isSelected)
                 Text(item.label)
                     .font(.system(size: 10, weight: isSelected ? .semibold : .regular))
+                    .foregroundStyle(isSelected ? Color.chefPrimary : Color.secondary)
             }
-            .foregroundStyle(isSelected ? Color.chefPrimary : Color.secondary)
             .frame(maxWidth: .infinity)
+            .padding(.vertical, 8)
+            .background {
+                if isSelected {
+                    Capsule()
+                        .glassEffect(.regular.tint(Color.chefPrimary.opacity(0.16)), in: .capsule)
+                        .matchedGeometryEffect(id: "chef-tab-highlight", in: highlightNamespace)
+                }
+            }
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(item.label)
         .accessibilityAddTraits(isSelected ? [.isSelected] : [])
+    }
+
+    /// Cada aba tem sua própria animação de SF Symbol ao ser selecionada —
+    /// não é só trocar de cor, o ícone reage de um jeito que combina com o
+    /// que ele representa.
+    @ViewBuilder
+    private func icon(for item: ChefTabBarItem, isSelected: Bool) -> some View {
+        let base = Image(systemName: item.systemImage)
+            .font(.system(size: 20, weight: isSelected ? .semibold : .regular))
+            .foregroundStyle(isSelected ? Color.chefPrimary : Color.secondary)
+
+        switch item.tab {
+        case .hoje:
+            base.symbolEffect(.bounce, value: isSelected)
+        case .dieta:
+            base.symbolEffect(.pulse, value: isSelected)
+        case .historico:
+            base.symbolEffect(.wiggle, value: isSelected)
+        case .perfil:
+            base.symbolEffect(.breathe, value: isSelected)
+        default:
+            base
+        }
     }
 
     private var scanButton: some View {
@@ -73,6 +112,7 @@ struct ChefTabBar: View {
                 Image(systemName: "camera.fill")
                     .font(.system(size: 19, weight: .bold))
                     .foregroundStyle(Color.chefOnPrimary)
+                    .symbolEffect(.bounce, value: isSelected)
             }
             .frame(width: 46, height: 46)
         }

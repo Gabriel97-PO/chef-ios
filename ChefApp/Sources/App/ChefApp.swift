@@ -16,7 +16,7 @@ struct ChefApp: App {
 
     var body: some Scene {
         WindowGroup {
-            RootTabView()
+            AppRootView()
         }
         .modelContainer(container)
     }

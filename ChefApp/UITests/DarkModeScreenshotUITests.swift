@@ -16,6 +16,7 @@ final class DarkModeScreenshotUITests: XCTestCase {
     func testCaptureMainScreensDark() throws {
         let app = XCUIApplication()
         app.launch()
+        _ = app.buttons["Hoje"].waitForExistence(timeout: 8)
 
         attachScreenshot(app, name: "10-dark-hoje")
 
