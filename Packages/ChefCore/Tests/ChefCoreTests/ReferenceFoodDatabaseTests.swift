@@ -27,4 +27,20 @@ final class ReferenceFoodDatabaseTests: XCTestCase {
         let names = ReferenceFoodDatabase.all.map(\.name)
         XCTAssertEqual(names.count, Set(names).count)
     }
+
+    func testUnitWeightForCountableFoodsMentionedByTheUser() {
+        // "1,2,3 bifes" — contra filé precisa ter peso por unidade.
+        XCTAssertEqual(ReferenceFoodDatabase.unitWeightGrams(forFoodNamed: "Contra filé grelhado"), 180)
+        XCTAssertEqual(ReferenceFoodDatabase.unitWeightGrams(forFoodNamed: "contra file grelhado"), 180) // sem acento/case
+        XCTAssertEqual(ReferenceFoodDatabase.unitWeightGrams(forFoodNamed: "Ovo cozido"), 50)
+    }
+
+    func testUnitWeightIsNilForFoodsOnlyMeasuredByWeight() {
+        XCTAssertNil(ReferenceFoodDatabase.unitWeightGrams(forFoodNamed: "Arroz branco cozido"))
+        XCTAssertNil(ReferenceFoodDatabase.unitWeightGrams(forFoodNamed: "Azeite de oliva"))
+    }
+
+    func testUnitWeightForUnknownFoodIsNil() {
+        XCTAssertNil(ReferenceFoodDatabase.unitWeightGrams(forFoodNamed: "Alimento que não existe"))
+    }
 }

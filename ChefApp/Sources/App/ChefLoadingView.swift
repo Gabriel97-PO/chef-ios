@@ -84,7 +84,10 @@ struct ChefLoadingView: View {
                 .frame(width: 140, height: 140)
                 .shadow(color: Color.chefPrimary.opacity(leafGlow), radius: 20)
                 .scaleEffect(leafScale)
-                .rotationEffect(.degrees(leafRotation), anchor: UnitPoint(x: 0.74, y: 0.82))
+                // Ancorado perto da base da folha (onde ela "nasce" do
+                // chapéu), não no centro — assim o balanço lê como um
+                // talo balançando, não a folha inteira girando no lugar.
+                .rotationEffect(.degrees(leafRotation), anchor: UnitPoint(x: 0.70, y: 0.91))
 
                 if showFeedbackStrokes {
                     ChefFeedbackStrokes()
@@ -126,22 +129,24 @@ struct ChefLoadingView: View {
         try? await sleep(200)
 
         // 2 · ativação (350ms, easeOut(.2,0,0,1)) — a folha ganha vida:
-        // escala de 0.92 pra 1.0, leve rotação, brilho do acento. O
-        // restante do ícone (o chapéu) permanece parado.
+        // escala de 0.92 pra 1.0, brilho do acento, e entra num balanço
+        // contínuo (o "movimento relacionado ao logo" que dá a sensação
+        // de folha viva, em vez de um ícone estático com glow). O
+        // restante do ícone (o chapéu) permanece parado o tempo todo.
         if reduceMotion {
             withAnimation(.easeOut(duration: 0.2)) { leafScale = 1.0; leafGlow = 0.55 }
         } else {
             Haptics.selection()
             withAnimation(.timingCurve(0.2, 0, 0, 1, duration: 0.35)) {
                 leafScale = 1.0
-                leafRotation = 6
                 leafGlow = 0.7
+            }
+            leafRotation = -9
+            withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true)) {
+                leafRotation = 9
             }
         }
         try? await sleep(350)
-        if !reduceMotion {
-            withAnimation(.easeOut(duration: 0.15)) { leafRotation = 0 }
-        }
 
         // 3 · transição (300ms, easeInOut) — partículas se expandem a
         // partir do ícone sem deslocá-lo do centro.
