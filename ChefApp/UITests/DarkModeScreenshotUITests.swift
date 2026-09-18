@@ -30,14 +30,13 @@ final class DarkModeScreenshotUITests: XCTestCase {
         }
     }
 
-    /// `waitForExistence` não basta aqui: o `RootTabView` já existe por
-    /// baixo da splash desde o primeiro instante, só coberto visualmente —
-    /// `isHittable` é o que reflete se o botão está de fato visível/tocável.
+    /// Ver o comentário equivalente em `ScreenshotUITests.waitForSplash` —
+    /// nem `waitForExistence` nem `isHittable` bastam pra saber se a splash
+    /// já saiu de cena; a duração da sequência é determinística, então uma
+    /// espera fixa com folga é o jeito confiável.
     private func waitForSplash(_ app: XCUIApplication) {
-        let hoje = app.buttons["Hoje"]
-        _ = hoje.waitForExistence(timeout: 8)
-        let hittable = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isHittable == true"), object: hoje)
-        _ = XCTWaiter().wait(for: [hittable], timeout: 8)
+        _ = app.buttons["Hoje"].waitForExistence(timeout: 8)
+        sleep(4)
     }
 
     private func attachScreenshot(_ app: XCUIApplication, name: String) {

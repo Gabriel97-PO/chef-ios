@@ -20,7 +20,9 @@ struct ChefLoadingView: View {
 
     var body: some View {
         ZStack {
-            Color(uiColor: .systemBackground).ignoresSafeArea()
+            Color(uiColor: .systemBackground)
+                .ignoresSafeArea()
+                .opacity(markOpacity)
 
             ZStack {
                 if particlesVisible {

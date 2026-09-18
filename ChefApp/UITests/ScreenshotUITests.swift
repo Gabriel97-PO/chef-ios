@@ -92,17 +92,18 @@ final class ScreenshotUITests: XCTestCase {
         attachScreenshot(app, name: "09-import-aplicado")
     }
 
-    /// Espera a `ChefLoadingView` sumir (~3.4s de animação) antes de mexer
-    /// na tela. `waitForExistence` sozinho não serve aqui: o `RootTabView`
-    /// já existe por baixo da splash desde o primeiro instante (só coberto
-    /// visualmente por um `ZStack`), então o botão "existe" na árvore de
-    /// acessibilidade antes mesmo da animação começar. `isHittable` é o que
-    /// realmente reflete se ele está visível e tocável no momento.
+    /// Espera a `ChefLoadingView` sumir antes de mexer na tela. Nem
+    /// `waitForExistence` nem `isHittable` servem aqui: o `RootTabView` já
+    /// existe por baixo da splash desde o primeiro instante (só coberto
+    /// visualmente por um `ZStack`), e o `Color` que cobre a tela durante a
+    /// splash não é um elemento de acessibilidade — o XCUITest não percebe
+    /// que ele está bloqueando o toque, então `isHittable` dá falso positivo
+    /// antes da animação acabar. A duração da sequência é 100% determinística
+    /// (soma dos `sleep` em `ChefLoadingView.runSequence`, ~3.4s), então uma
+    /// espera fixa com folga é mais confiável que tentar inferir pela UI.
     private func waitForSplash(_ app: XCUIApplication) {
-        let hoje = app.buttons["Hoje"]
-        _ = hoje.waitForExistence(timeout: 8)
-        let hittable = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isHittable == true"), object: hoje)
-        _ = XCTWaiter().wait(for: [hittable], timeout: 8)
+        _ = app.buttons["Hoje"].waitForExistence(timeout: 8)
+        sleep(4)
     }
 
     private func attachScreenshot(_ app: XCUIApplication, name: String) {
