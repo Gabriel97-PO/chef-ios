@@ -16,7 +16,7 @@ final class DarkModeScreenshotUITests: XCTestCase {
     func testCaptureMainScreensDark() throws {
         let app = XCUIApplication()
         app.launch()
-        _ = app.buttons["Hoje"].waitForExistence(timeout: 8)
+        waitForSplash(app)
 
         attachScreenshot(app, name: "10-dark-hoje")
 
@@ -28,6 +28,16 @@ final class DarkModeScreenshotUITests: XCTestCase {
             }
             attachScreenshot(app, name: fileName)
         }
+    }
+
+    /// `waitForExistence` não basta aqui: o `RootTabView` já existe por
+    /// baixo da splash desde o primeiro instante, só coberto visualmente —
+    /// `isHittable` é o que reflete se o botão está de fato visível/tocável.
+    private func waitForSplash(_ app: XCUIApplication) {
+        let hoje = app.buttons["Hoje"]
+        _ = hoje.waitForExistence(timeout: 8)
+        let hittable = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isHittable == true"), object: hoje)
+        _ = XCTWaiter().wait(for: [hittable], timeout: 8)
     }
 
     private func attachScreenshot(_ app: XCUIApplication, name: String) {
