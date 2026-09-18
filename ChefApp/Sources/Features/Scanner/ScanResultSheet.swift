@@ -10,6 +10,16 @@ struct ScanResultSheet: View {
     let scanResult: ScanResult
     var onAdded: (() -> Void)?
 
+    /// Nome digitado pelo usuário antes de escanear (roadmap: "possibilidade
+    /// de inserir o nome do alimento que está sendo registrado"). Prevalece
+    /// sobre o nome que o OCR detectou — a tabela nutricional raramente traz
+    /// o nome do produto junto, então o OCR quase sempre cai no fallback
+    /// genérico; o que a pessoa digitou de propósito é mais confiável.
+    private static func initialName(scanResult: ScanResult, presetName: String) -> String {
+        if !presetName.isEmpty { return presetName }
+        return scanResult.name?.value ?? "Alimento escaneado"
+    }
+
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     @Query private var profiles: [SDUserProfile]
@@ -31,9 +41,9 @@ struct ScanResultSheet: View {
 
     private var confidenceByField: [String: Double?]
 
-    init(scanResult: ScanResult) {
+    init(scanResult: ScanResult, presetName: String = "") {
         self.scanResult = scanResult
-        _name = State(initialValue: scanResult.name?.value ?? "Alimento escaneado")
+        _name = State(initialValue: Self.initialName(scanResult: scanResult, presetName: presetName))
         _portionSize = State(initialValue: scanResult.portionSize?.value ?? 100)
         _portionUnit = State(initialValue: scanResult.portionUnit ?? .g)
         _calories = State(initialValue: scanResult.calories?.value)
@@ -203,7 +213,9 @@ struct ScanResultSheet: View {
                 .disabled(missingRequiredFields)
             }
             .padding(20)
+            .padding(.bottom, 32)
         }
+        .scrollDismissesKeyboard(.interactively)
         .confirmationDialog("Adicionar em qual refeição?", isPresented: $showSlotPicker, titleVisibility: .visible) {
             ForEach(MealSlot.allCases) { slot in
                 Button(slot.label) { addToDay(slot: slot) }

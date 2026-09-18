@@ -34,7 +34,9 @@ struct DietImportView: View {
                     }
                 }
                 .padding()
+                .padding(.bottom, 32)
             }
+            .scrollDismissesKeyboard(.interactively)
             .navigationTitle("Importar dieta")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

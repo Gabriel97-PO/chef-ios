@@ -59,7 +59,9 @@ struct MealDetailSheet: View {
                     addSection
                 }
                 .padding()
+                .padding(.bottom, 32)
             }
+            .scrollDismissesKeyboard(.interactively)
             .navigationTitle(slot.label)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

@@ -67,6 +67,7 @@ struct DietView: View {
                 .padding()
                 .padding(.bottom, 90)
             }
+            .scrollDismissesKeyboard(.interactively)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar(.hidden, for: .navigationBar)
             .chefKeyboardDismissToolbar()

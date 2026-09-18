@@ -1,21 +1,50 @@
 import SwiftUI
 
-/// Tela de loading no lançamento do app, seguindo as 6 fases descritas no
-/// fluxo de marca: início (ícone estático) → ativação (a folha ganha vida)
-/// → transição (elementos se expandem) → progresso (indicador circular
-/// animado) → conclusão (ícone retorna com feedback) → feedback (micro
-/// feedback visual). Chama `onFinished` ao final pra revelar o app.
+/// Tela de loading no lançamento do app, seguindo a especificação de 6
+/// estados do fluxo de marca (18/set/2026): Início → Ativação → Transição
+/// → Progresso → Conclusão → Feedback. Chama `onFinished` ao final pra
+/// revelar o app.
+///
+/// O que foi implementado da especificação e o que não se aplica a este
+/// app (nativo iOS, 100% local, sem rede):
+/// - Estados 1-6, tempos e curvas da tabela (AC.01-04, AC.07-08): sim.
+/// - Só a folha/faixa animam no estado 2, o chapéu fica parado (AC.03):
+///   sim — por isso `ChefHatShape` é renderizado à parte de
+///   `ChefStripeShape`/`ChefLeafShape` aqui, em vez de compor tudo numa
+///   marca única e indivisível.
+/// - Único acento por tema, sem degradê no acento (RN.10): sim — o anel
+///   de progresso é cor chapada.
+/// - "Reduzir movimento" (AC.10): sim, via `accessibilityReduceMotion`.
+/// - Não roda a sequência completa ao voltar de segundo plano (RN.02):
+///   sim, de graça — `AppRootView` mantém `showSplash = false` durante
+///   toda a vida do processo, e SwiftUI não recria a view ao só voltar do
+///   background.
+/// - Não pode ser pulada por toque (RN.15): sim — não tem gesto nenhum
+///   aqui.
+/// - Estado 4 condicional a carregamento real (RN.05/06/RN.14): a lógica
+///   existe (`dataAlreadyReady`), mas como todo dado do Chef é local e já
+///   carrega no `init()` do App antes da UI existir, ela nunca dispara na
+///   prática hoje — fica pronta pra quando um carregamento de verdade
+///   reaproveitar esse componente.
+/// - Lottie/Rive, ícone adaptativo Android, exportação SVG web, telas de
+///   erro/cache/timeout de rede (RN.08/09, AC.12/13): fora de escopo — o
+///   Chef não tem rede nem backend, essas regras existem pra um app que
+///   ainda não é este.
 struct ChefLoadingView: View {
     var onFinished: () -> Void
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    @State private var leafScale: CGFloat = 0.92
+    @State private var leafRotation: Double = 0
     @State private var leafGlow: Double = 0
-    @State private var markScale: CGFloat = 1
     @State private var particlesVisible = false
     @State private var showRing = false
     @State private var ringTrim: CGFloat = 0
     @State private var ringRotation: Double = 0
     @State private var showCheck = false
     @State private var checkScale: CGFloat = 0.3
+    @State private var showFeedbackStrokes = false
     @State private var markOpacity: Double = 1
 
     var body: some View {
@@ -39,10 +68,28 @@ struct ChefLoadingView: View {
                         .rotationEffect(.degrees(ringRotation))
                 }
 
-                ChefMarkView(hatColor: .primary, accentColor: .chefPrimary)
+                // Chapéu sempre parado — só a faixa/folha animam (AC.03).
+                // `chefFigure` (quase branco/quase preto) precisa do
+                // contorno sutil pra não sumir contra o fundo do sistema,
+                // quase da mesma cor.
+                ChefHatShape()
+                    .fill(Color.chefFigure)
+                    .overlay(ChefHatShape().stroke(Color.chefFigureOutline, lineWidth: 1.5))
                     .frame(width: 140, height: 140)
-                    .shadow(color: Color.chefPrimary.opacity(leafGlow), radius: 26)
-                    .scaleEffect(markScale)
+
+                ZStack {
+                    ChefStripeShape().fill(Color.chefPrimary)
+                    ChefLeafShape().fill(Color.chefPrimary)
+                }
+                .frame(width: 140, height: 140)
+                .shadow(color: Color.chefPrimary.opacity(leafGlow), radius: 20)
+                .scaleEffect(leafScale)
+                .rotationEffect(.degrees(leafRotation), anchor: UnitPoint(x: 0.74, y: 0.82))
+
+                if showFeedbackStrokes {
+                    ChefFeedbackStrokes()
+                        .frame(width: 140, height: 140)
+                }
 
                 if showCheck {
                     Circle()
@@ -69,58 +116,87 @@ struct ChefLoadingView: View {
                     .padding(.bottom, 64)
             }
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(showCheck ? "Pronto" : "Carregando")
         .task { await runSequence() }
     }
 
     private func runSequence() async {
-        // 1 · início — ícone estático.
-        try? await sleep(500)
+        // 1 · início (200ms, linear) — ícone estático em repouso.
+        try? await sleep(200)
 
-        // 2 · ativação — a folha ganha vida (glow + leve bounce de escala).
-        withAnimation(.spring(response: 0.35, dampingFraction: 0.55)) {
-            markScale = 1.14
-            leafGlow = 0.7
-        }
-        try? await sleep(180)
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-            markScale = 1.0
-        }
-        try? await sleep(320)
-
-        // 3 · transição — elementos se expandem (partículas irradiando).
-        Haptics.selection()
-        withAnimation(.easeOut(duration: 0.1)) { particlesVisible = true }
-        try? await sleep(500)
-
-        // 4 · progresso — indicador circular animado.
-        withAnimation(.easeIn(duration: 0.2)) {
-            showRing = true
-            ringTrim = 0.72
-        }
-        withAnimation(.linear(duration: 0.9)) {
-            ringRotation = 360
-        }
-        try? await sleep(900)
-
-        // 5 · conclusão — ícone retorna com feedback (check).
-        particlesVisible = false
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.55)) {
-            ringTrim = 1.0
-        }
-        try? await sleep(150)
-        withAnimation(.easeOut(duration: 0.25)) { showRing = false }
-        withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) {
-            showCheck = true
-            checkScale = 1.0
-        }
-        Haptics.success()
-        try? await sleep(500)
-
-        // 6 · feedback — micro feedback visual, depois revela o app.
-        withAnimation(.easeInOut(duration: 0.35)) {
-            markOpacity = 0
+        // 2 · ativação (350ms, easeOut(.2,0,0,1)) — a folha ganha vida:
+        // escala de 0.92 pra 1.0, leve rotação, brilho do acento. O
+        // restante do ícone (o chapéu) permanece parado.
+        if reduceMotion {
+            withAnimation(.easeOut(duration: 0.2)) { leafScale = 1.0; leafGlow = 0.55 }
+        } else {
+            Haptics.selection()
+            withAnimation(.timingCurve(0.2, 0, 0, 1, duration: 0.35)) {
+                leafScale = 1.0
+                leafRotation = 6
+                leafGlow = 0.7
+            }
         }
         try? await sleep(350)
+        if !reduceMotion {
+            withAnimation(.easeOut(duration: 0.15)) { leafRotation = 0 }
+        }
+
+        // 3 · transição (300ms, easeInOut) — partículas se expandem a
+        // partir do ícone sem deslocá-lo do centro.
+        if !reduceMotion {
+            withAnimation(.easeInOut(duration: 0.3)) { particlesVisible = true }
+        }
+        try? await sleep(300)
+
+        // 4 · progresso (indeterminado) — condicional: só aparece se o
+        // carregamento ainda não tiver terminado (RN.05/06). Hoje os
+        // dados do Chef são locais e já estão prontos nesse ponto, então
+        // isso não dispara na prática — ver nota na doc do tipo.
+        let dataAlreadyReady = true
+        if !dataAlreadyReady {
+            withAnimation(.easeIn(duration: 0.2)) {
+                showRing = true
+                ringTrim = reduceMotion ? 1.0 : 0.5
+            }
+            if !reduceMotion {
+                withAnimation(.linear(duration: 1.2).repeatForever(autoreverses: false)) {
+                    ringRotation = 360
+                }
+            }
+            try? await sleep(1200)
+        }
+
+        // 5 · conclusão (400ms, spring rigidez 300/amortecimento 22) — o
+        // ícone volta com escala 0.9→1.0 e o selo de check surge.
+        particlesVisible = false
+        if showRing {
+            withAnimation(.easeOut(duration: 0.2)) { showRing = false }
+        }
+        if reduceMotion {
+            withAnimation(.easeOut(duration: 0.2)) { showCheck = true; checkScale = 1.0 }
+        } else {
+            withAnimation(.spring(mass: 1, stiffness: 300, damping: 22)) {
+                showCheck = true
+                checkScale = 1.0
+            }
+        }
+        Haptics.success()
+        try? await sleep(400)
+
+        // 6 · feedback (300ms, easeOut) — micro feedback: traços curtos
+        // partindo da folha, expandindo e desaparecendo.
+        if !reduceMotion {
+            withAnimation(.easeOut(duration: 0.3)) { showFeedbackStrokes = true }
+        }
+        try? await sleep(300)
+
+        // Saída: fade sobreposto ao estado 6, sem tela preta intermediária.
+        withAnimation(.easeInOut(duration: 0.25)) {
+            markOpacity = 0
+        }
+        try? await sleep(250)
         onFinished()
     }
 
@@ -149,6 +225,30 @@ private struct ChefLoadingParticle: View {
                     animate = true
                 }
             }
+    }
+}
+
+/// Estado 6 — três traços curtos partindo da folha (canto inferior
+/// direito da marca), expandindo e desaparecendo.
+private struct ChefFeedbackStrokes: View {
+    @State private var animate = false
+
+    var body: some View {
+        ZStack {
+            ForEach(0..<3, id: \.self) { index in
+                let angle = Double(index) * 22 - 22
+                Capsule()
+                    .fill(Color.chefPrimary)
+                    .frame(width: 3, height: 14)
+                    .offset(y: animate ? -34 : -14)
+                    .opacity(animate ? 0 : 1)
+                    .rotationEffect(.degrees(angle))
+            }
+        }
+        .offset(x: 52, y: 54)
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.3)) { animate = true }
+        }
     }
 }
 
