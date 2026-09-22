@@ -18,7 +18,7 @@ final class ScreenshotUITests: XCTestCase {
 
         attachScreenshot(app, name: "01-hoje")
 
-        for (tabLabel, fileName) in [("Dieta", "02-dieta"), ("Scan", "03-scan"), ("Histórico", "04-historico"), ("Perfil", "05-perfil")] {
+        for (tabLabel, fileName) in [("Dieta", "02-dieta"), ("Será que eu posso?", "03-scan"), ("Histórico", "04-historico"), ("Perfil", "05-perfil")] {
             let tab = app.buttons[tabLabel]
             if tab.waitForExistence(timeout: 5) {
                 tab.tap()
