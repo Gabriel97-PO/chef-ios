@@ -119,7 +119,7 @@ struct ChefTabBar: View {
         .buttonStyle(.plain)
         .shadow(color: Color.chefPrimary.opacity(0.35), radius: 6, y: 2)
         .scaleEffect(isSelected ? 1.06 : 1.0)
-        .accessibilityLabel("Scan")
+        .accessibilityLabel("Será que eu posso?")
         .accessibilityAddTraits(isSelected ? [.isSelected] : [])
     }
 }

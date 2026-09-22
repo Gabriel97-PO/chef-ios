@@ -41,6 +41,7 @@ struct ScannerView: View {
                 }
 
                 VStack(spacing: 16) {
+                    screenTitle
                     productNameField
                     Spacer()
                     statusOverlay
@@ -67,6 +68,21 @@ struct ScannerView: View {
         .onChange(of: showResultSheet) { _, isShowing in
             if !isShowing { productName = "" }
         }
+    }
+
+    /// "Scanner" é só o nome técnico interno da arquitetura — pro usuário,
+    /// essa tela é a pergunta central do app (seção 1 da especificação).
+    private var screenTitle: some View {
+        VStack(spacing: 2) {
+            Text("Será que eu posso?")
+                .font(.system(size: 20, weight: .black, design: .rounded))
+                .foregroundStyle(.white)
+            Text("Aponte a câmera para um alimento, produto ou prato.")
+                .font(.caption)
+                .foregroundStyle(.white.opacity(0.7))
+        }
+        .multilineTextAlignment(.center)
+        .padding(.top, 4)
     }
 
     private var productNameField: some View {
@@ -102,7 +118,7 @@ struct ScannerView: View {
             } else if isProcessing {
                 VStack(spacing: 12) {
                     ProgressView().tint(.white)
-                    Text("Lendo tabela nutricional…")
+                    Text("O Chef está analisando…")
                         .foregroundStyle(.white)
                         .font(.subheadline.weight(.medium))
                 }

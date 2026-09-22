@@ -15,22 +15,40 @@ import Foundation
 /// Carboidratos\nProteínas") são tratadas com um fallback por ordem de
 /// aparição — funciona na maioria dos rótulos reais, mas reconstrução de
 /// layout por posição geométrica (bounding boxes) é um refinamento futuro.
+///
+/// Além dos seis campos centrais (calorias/proteína/carboidratos/gordura/
+/// fibra/sódio), reconhece um subconjunto dos nutrientes estendidos da
+/// seção 5 — só os que aparecem com regularidade em rótulo brasileiro real
+/// (açúcares, gorduras saturadas/trans, cálcio, ferro). A taxonomia
+/// completa existe em `NutrientKind`, mas fingir que o parser lê "ômega 9"
+/// ou "molibdênio" de uma foto seria inventar dado que a tabela quase nunca
+/// declara.
 public enum NutritionLabelParser {
 
-    private struct FieldMatch {
-        var value: Double
-        var confidence: Double
+    /// Onde um nutriente reconhecido é gravado no `ScanResult` — os seis
+    /// campos centrais têm propriedade própria (histórico, usados em
+    /// cálculo de orçamento em todo o app), os demais vão pro dicionário
+    /// extensível.
+    private enum FieldTarget {
+        case core(WritableKeyPath<ScanResult, ScanField<Double>?>)
+        case extended(NutrientKind)
     }
 
     private static let numberPattern = try! NSRegularExpression(pattern: #"(\d+[.,]?\d*)"#)
 
-    private static let keywordPatterns: [(keyword: NSRegularExpression, field: WritableKeyPath<ScanResult, ScanField<Double>?>)] = [
-        (regex(#"valor\s+energ[eé]tico|calorias"#), \.calories),
-        (regex(#"prote[ií]nas?"#), \.protein),
-        (regex(#"carboidratos?"#), \.carbs),
-        (regex(#"gorduras?\s+totais?"#), \.fat),
-        (regex(#"fibra\s+aliment(ar)?"#), \.fiber),
-        (regex(#"s[oó]dio"#), \.sodium),
+    private static let keywordPatterns: [(keyword: NSRegularExpression, target: FieldTarget)] = [
+        (regex(#"valor\s+energ[eé]tico|calorias"#), .core(\.calories)),
+        (regex(#"prote[ií]nas?"#), .core(\.protein)),
+        (regex(#"carboidratos?"#), .core(\.carbs)),
+        (regex(#"gorduras?\s+totais?"#), .core(\.fat)),
+        (regex(#"fibra\s+aliment(ar)?"#), .core(\.fiber)),
+        (regex(#"s[oó]dio"#), .core(\.sodium)),
+        (regex(#"a[cç][uú]cares\s+totais?"#), .extended(.totalSugars)),
+        (regex(#"a[cç][uú]cares\s+adicionados?"#), .extended(.addedSugars)),
+        (regex(#"gorduras?\s+saturadas?"#), .extended(.saturatedFat)),
+        (regex(#"gorduras?\s+trans"#), .extended(.transFat)),
+        (regex(#"c[aá]lcio"#), .extended(.calcium)),
+        (regex(#"ferro"#), .extended(.iron)),
     ]
 
     private static let portionPattern = regex(#"por[cç][aã]o\D*?(\d+[.,]?\d*)\s*(g|ml)"#)
@@ -54,6 +72,20 @@ public enum NutritionLabelParser {
 
     private static func matches(_ regex: NSRegularExpression, _ text: String) -> Bool {
         regex.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)) != nil
+    }
+
+    private static func isSet(_ target: FieldTarget, in result: ScanResult) -> Bool {
+        switch target {
+        case .core(let keyPath): return result[keyPath: keyPath] != nil
+        case .extended(let kind): return result.extendedNutrients[kind] != nil
+        }
+    }
+
+    private static func set(_ target: FieldTarget, _ field: ScanField<Double>, in result: inout ScanResult) {
+        switch target {
+        case .core(let keyPath): result[keyPath: keyPath] = field
+        case .extended(let kind): result.extendedNutrients[kind] = field
+        }
     }
 
     /// Uma linha "quase só número" (permite unidade/observação curta junto,
@@ -85,10 +117,10 @@ public enum NutritionLabelParser {
 
         // Passo 1: rótulo e número na mesma linha (formato de uma coluna).
         for (index, line) in lines.enumerated() {
-            for (keywordRegex, field) in keywordPatterns {
-                guard result[keyPath: field] == nil, matches(keywordRegex, line.text) else { continue }
+            for (keywordRegex, target) in keywordPatterns {
+                guard !isSet(target, in: result), matches(keywordRegex, line.text) else { continue }
                 if let value = firstNumber(in: line.text) {
-                    result[keyPath: field] = ScanField(value: value, confidence: line.confidence)
+                    set(target, ScanField(value: value, confidence: line.confidence), in: &result)
                     consumedNumberLines.insert(index)
                 }
             }
@@ -102,12 +134,12 @@ public enum NutritionLabelParser {
         var queueIndex = 0
 
         for line in lines {
-            for (keywordRegex, field) in keywordPatterns {
-                guard result[keyPath: field] == nil, matches(keywordRegex, line.text) else { continue }
+            for (keywordRegex, target) in keywordPatterns {
+                guard !isSet(target, in: result), matches(keywordRegex, line.text) else { continue }
                 guard queueIndex < numberQueue.count else { continue }
                 let numberLine = numberQueue[queueIndex].element
                 if let value = firstNumber(in: numberLine.text) {
-                    result[keyPath: field] = ScanField(value: value, confidence: min(line.confidence, numberLine.confidence))
+                    set(target, ScanField(value: value, confidence: min(line.confidence, numberLine.confidence)), in: &result)
                     queueIndex += 1
                 }
             }

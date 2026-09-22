@@ -84,60 +84,6 @@ public enum NutritionEngine {
         )
     }
 
-    private static let attentionCalorieShare = 0.35
-    private static let goodProteinPerCalorie = 0.08
-
-    /// analyzeFoodFit: responde "isso cabe na dieta?" de forma transparente
-    /// e factual, com base apenas em calorias/proteína restantes e no que a
-    /// porção representa. Nunca atribui juízo de valor moral/saúde ao
-    /// alimento — apenas mede encaixe no orçamento do dia (seção 21 do
-    /// plano de migração).
-    public static func analyzeFoodFit(food: NutritionFacts, dailyGoal: DailyGoal, consumedToday: NutritionFacts) -> FoodFitResult {
-        let budget = calculateRemainingBudget(goal: dailyGoal, consumed: consumedToday)
-        let caloriesRemaining = budget.caloriesRemaining
-        let proteinRemaining = budget.proteinRemaining
-
-        let caloriePercentage = dailyGoal.calories > 0 ? Int((food.calories / dailyGoal.calories * 100).rounded()) : 0
-        let proteinPercentage = dailyGoal.protein > 0 ? Int((food.protein / dailyGoal.protein * 100).rounded()) : 0
-
-        let wouldExceedCalories = food.calories > caloriesRemaining
-        let shareOfRemainingCalories = caloriesRemaining > 0 ? food.calories / caloriesRemaining : .infinity
-        let proteinPerCalorie = food.calories > 0 ? food.protein / food.calories : 0
-
-        let status: FitStatus
-        let message: String
-
-        if wouldExceedCalories {
-            status = .doesNotFit
-            let excess = round1(food.calories - caloriesRemaining)
-            message = "Esta porção ultrapassaria em \(formatKcal(excess)) kcal o seu orçamento restante de calorias hoje."
-        } else if shareOfRemainingCalories > attentionCalorieShare {
-            status = .attention
-            let pct = Int((shareOfRemainingCalories * 100).rounded())
-            message = "Esta porção usa \(pct)% das suas calorias restantes hoje. Cabe, mas considere o restante das refeições do dia."
-        } else if proteinPerCalorie < goodProteinPerCalorie && proteinRemaining > 0 {
-            status = .attention
-            let pct = Int((shareOfRemainingCalories * 100).rounded())
-            message = "Esta porção usa \(pct)% das calorias restantes e contribui pouco para a sua meta de proteína ainda em aberto."
-        } else {
-            status = .fits
-            let pctCal = Int((shareOfRemainingCalories * 100).rounded())
-            let pctProt = proteinRemaining > 0 ? Int((food.protein / proteinRemaining * 100).rounded()) : 100
-            message = "Esta porção usa aproximadamente \(pctCal)% das suas calorias restantes e \(pctProt)% da sua proteína restante hoje."
-        }
-
-        return FoodFitResult(
-            status: status,
-            calories: food.calories,
-            protein: food.protein,
-            caloriesRemaining: caloriesRemaining,
-            proteinRemaining: proteinRemaining,
-            caloriePercentage: caloriePercentage,
-            proteinPercentage: proteinPercentage,
-            message: message
-        )
-    }
-
     public struct DayTotals: Equatable, Sendable {
         public var date: String
         public var consumed: NutritionFacts
@@ -219,9 +165,5 @@ public enum NutritionEngine {
             return "Pouco espaço calórico restante hoje — prefira porções menores."
         }
         return "Você ainda tem espaço no seu orçamento de hoje."
-    }
-
-    private static func formatKcal(_ n: Double) -> String {
-        n.truncatingRemainder(dividingBy: 1) == 0 ? String(Int(n)) : String(format: "%.1f", n)
     }
 }

@@ -71,4 +71,52 @@ final class NutritionLabelParserTests: XCTestCase {
         XCTAssertEqual(result.calories?.confidence, 0.42)
         XCTAssertEqual(confidenceTier(result.calories?.confidence), .unrecognized)
     }
+
+    // MARK: - Nutrientes estendidos (seção 5)
+
+    func testParsesTheExtendedNutrientsThatCommonlyAppearOnRealLabels() {
+        let lines = [
+            line("Açúcares totais 8 g"),
+            line("Açúcares adicionados 5 g"),
+            line("Gorduras saturadas 1 g"),
+            line("Gorduras trans 0 g"),
+            line("Cálcio 120 mg"),
+            line("Ferro 2 mg"),
+        ]
+        let result = NutritionLabelParser.parse(lines: lines)
+
+        XCTAssertEqual(result.extendedNutrients[.totalSugars]?.value, 8)
+        XCTAssertEqual(result.extendedNutrients[.addedSugars]?.value, 5)
+        XCTAssertEqual(result.extendedNutrients[.saturatedFat]?.value, 1)
+        XCTAssertEqual(result.extendedNutrients[.transFat]?.value, 0)
+        XCTAssertEqual(result.extendedNutrients[.calcium]?.value, 120)
+        XCTAssertEqual(result.extendedNutrients[.iron]?.value, 2)
+    }
+
+    /// A regra "nil ≠ zero" (seção 6) vale igual pro dicionário estendido:
+    /// declarado como zero fica com a chave presente e valor 0; nunca
+    /// declarado simplesmente não entra no dicionário.
+    func testDeclaredZeroVersusNotDeclaredInExtendedNutrients() {
+        let lines = [line("Gorduras trans 0 g")] // "açúcares" nem aparece
+        let result = NutritionLabelParser.parse(lines: lines)
+
+        XCTAssertNotNil(result.extendedNutrients[.transFat])
+        XCTAssertEqual(result.extendedNutrients[.transFat]?.value, 0)
+        XCTAssertNil(result.extendedNutrients[.totalSugars])
+    }
+
+    func testExtendedAndCoreFieldsDoNotStealEachOthersNumbers() {
+        let lines = [
+            line("Carboidratos 22 g"),
+            line("Açúcares totais 8 g"),
+            line("Gorduras totais 2 g"),
+            line("Gorduras saturadas 1 g"),
+        ]
+        let result = NutritionLabelParser.parse(lines: lines)
+
+        XCTAssertEqual(result.carbs?.value, 22)
+        XCTAssertEqual(result.extendedNutrients[.totalSugars]?.value, 8)
+        XCTAssertEqual(result.fat?.value, 2)
+        XCTAssertEqual(result.extendedNutrients[.saturatedFat]?.value, 1)
+    }
 }

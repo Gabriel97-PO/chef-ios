@@ -19,40 +19,10 @@ final class NutritionEngineTests: XCTestCase {
         XCTAssertEqual(NutritionEngine.calculatePortion(food: rap10, quantity: 0).calories, 0)
     }
 
-    func testAnalyzeFoodFitFitsWhenSmallShareOfBudget() {
-        let goal = DailyGoal(calories: 2100, protein: 170)
-        let result = NutritionEngine.analyzeFoodFit(
-            food: NutritionFacts(calories: 120, protein: 24, carbs: 3, fat: 2),
-            dailyGoal: goal,
-            consumedToday: .zero
-        )
-        XCTAssertEqual(result.status, .fits)
-        XCTAssertEqual(result.caloriesRemaining, 2100)
-    }
-
-    func testAnalyzeFoodFitDoesNotFitWhenExceedsRemaining() {
-        let goal = DailyGoal(calories: 2100, protein: 170)
-        let result = NutritionEngine.analyzeFoodFit(
-            food: NutritionFacts(calories: 900, protein: 10, carbs: 100, fat: 20),
-            dailyGoal: goal,
-            consumedToday: NutritionFacts(calories: 1800, protein: 100, carbs: 0, fat: 0)
-        )
-        XCTAssertEqual(result.status, .doesNotFit)
-        XCTAssertEqual(result.caloriesRemaining, 300)
-    }
-
-    func testAnalyzeFoodFitNeverUsesJudgmentalLanguage() {
-        let goal = DailyGoal(calories: 2100, protein: 170)
-        let result = NutritionEngine.analyzeFoodFit(
-            food: NutritionFacts(calories: 900, protein: 10, carbs: 100, fat: 20),
-            dailyGoal: goal,
-            consumedToday: NutritionFacts(calories: 1800, protein: 100, carbs: 0, fat: 0)
-        )
-        let lowered = result.message.lowercased()
-        for forbidden in ["ruim", "proibido", "saudável", "lixo"] {
-            XCTAssertFalse(lowered.contains(forbidden))
-        }
-    }
+    // A pergunta "isso cabe na dieta?" mudou de dono: ver
+    // FoodFitAnalyzerTests.swift — testes de análise de encaixe ficam lá,
+    // junto do FoodFitAnalyzer (seção 13 da especificação "Será que eu
+    // posso?": "uma única inteligência de decisão nutricional").
 
     func testValidateNutritionCoherenceAcceptsConsistentValues() {
         XCTAssertNil(NutritionEngine.validateNutritionCoherence(NutritionFacts(calories: 220, protein: 18, carbs: 15, fat: 9)))

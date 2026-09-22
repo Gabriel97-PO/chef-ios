@@ -86,7 +86,7 @@ struct ScanResultSheet: View {
     }
 
     private var fit: FoodFitResult {
-        NutritionEngine.analyzeFoodFit(food: previewNutrition, dailyGoal: goal, consumedToday: consumedToday)
+        FoodFitAnalyzer.analyze(FoodFitInput(nutrition: previewNutrition, dailyGoal: goal, consumedToday: consumedToday))
     }
 
     private var missingRequiredFields: Bool {
@@ -181,10 +181,10 @@ struct ScanResultSheet: View {
                 .frame(maxWidth: .infinity)
 
                 VStack(spacing: 10) {
-                    Text("CABE NA SUA DIETA?")
+                    Text("O CHEF RESPONDE")
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
-                    FitBadge(status: fit.status)
+                    FitBadge(status: fit.status, title: fit.title)
                     Text(fit.message)
                         .font(.subheadline)
                         .multilineTextAlignment(.center)
@@ -306,11 +306,15 @@ struct ScanResultSheet: View {
     }
 }
 
+/// A resposta do Chef, sempre com o emoji da marca (🍊, não o genérico 🟢
+/// de confiança de OCR) — evita confundir a resposta do "será que eu
+/// posso?" com o indicador de confiança dos campos, que usa 🟢🟡🔴.
 private struct FitBadge: View {
     let status: FitStatus
+    let title: String
 
     var body: some View {
-        Text(label)
+        Text("\(emoji) \(title)")
             .font(.subheadline.weight(.bold))
             .padding(.horizontal, 16)
             .padding(.vertical, 8)
@@ -318,11 +322,11 @@ private struct FitBadge: View {
             .foregroundStyle(color)
     }
 
-    private var label: String {
+    private var emoji: String {
         switch status {
-        case .fits: return "🟢 Cabe bem"
-        case .attention: return "🟡 Cabe, mas atenção"
-        case .doesNotFit: return "🔴 Não cabe agora"
+        case .fits: return "🍊"
+        case .attention: return "🟡"
+        case .doesNotFit: return "🔴"
         }
     }
 

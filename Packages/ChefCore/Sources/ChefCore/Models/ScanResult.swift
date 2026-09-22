@@ -22,6 +22,10 @@ public struct FoodFitResult: Codable, Sendable, Equatable {
     public var proteinRemaining: Double
     public var caloriePercentage: Int
     public var proteinPercentage: Int
+    /// Resposta curta do Chef ("Pode sim.", "Pode, mas com atenção.",
+    /// "Agora não seria a melhor escolha.") — pensada pra virar título/badge.
+    public var title: String
+    /// Explicação de uma frase do porquê, sem juízo de valor moral.
     public var message: String
 
     public init(
@@ -32,6 +36,7 @@ public struct FoodFitResult: Codable, Sendable, Equatable {
         proteinRemaining: Double,
         caloriePercentage: Int,
         proteinPercentage: Int,
+        title: String,
         message: String
     ) {
         self.status = status
@@ -41,6 +46,7 @@ public struct FoodFitResult: Codable, Sendable, Equatable {
         self.proteinRemaining = proteinRemaining
         self.caloriePercentage = caloriePercentage
         self.proteinPercentage = proteinPercentage
+        self.title = title
         self.message = message
     }
 }
@@ -58,6 +64,11 @@ public struct ScanResult: Codable, Sendable, Equatable {
     public var fat: ScanField<Double>?
     public var fiber: ScanField<Double>?
     public var sodium: ScanField<Double>?
+    /// Nutrientes além dos seis centrais (seção 5) — açúcares, gorduras
+    /// específicas, minerais, vitaminas etc. Chave ausente = nutriente não
+    /// declarado na tabela; chave presente com `value: 0` = declarado como
+    /// zero (seção 6) — mesma regra "nil ≠ zero" dos campos centrais.
+    public var extendedNutrients: [NutrientKind: ScanField<Double>]
     /// Mensagem de inconsistência entre calorias e macros, quando detectada.
     /// Nunca corrigida silenciosamente — só sinalizada para revisão.
     public var validationWarning: String?
@@ -76,6 +87,7 @@ public struct ScanResult: Codable, Sendable, Equatable {
         fat: ScanField<Double>? = nil,
         fiber: ScanField<Double>? = nil,
         sodium: ScanField<Double>? = nil,
+        extendedNutrients: [NutrientKind: ScanField<Double>] = [:],
         validationWarning: String? = nil,
         rawText: String? = nil,
         mockScenario: String? = nil
@@ -89,6 +101,7 @@ public struct ScanResult: Codable, Sendable, Equatable {
         self.carbs = carbs
         self.fat = fat
         self.fiber = fiber
+        self.extendedNutrients = extendedNutrients
         self.sodium = sodium
         self.validationWarning = validationWarning
         self.rawText = rawText
