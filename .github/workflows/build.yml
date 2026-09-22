@@ -65,29 +65,34 @@ jobs:
           echo "udid=$UDID" >> "$GITHUB_ENV"
           echo "Using device: $DEVICE ($UDID)"
 
+      # "xcodebuild build -destination ...Simulator..." NÃO deixa o
+      # simulador de pé sozinho (só "test" faz isso) — confirmado depois
+      # que o passo de aparência falhou com "Unable to lookup in current
+      # state: Shutdown" logo após o build. Então o boot precisa ser
+      # manual mesmo, só que sem repetir o erro das duas primeiras
+      # tentativas: em vez de "simctl bootstatus -b" (que já ficou preso
+      # de 90s a mais de 40 minutos nesse runner), espera o estado virar
+      # "Booted" com um polling curto e um teto de tempo real.
+      - name: Boot simulator and force light appearance
+        timeout-minutes: 3
+        run: |
+          xcrun simctl boot "$udid" || true
+          for i in $(seq 1 60); do
+            state=$(xcrun simctl list devices | grep "$udid" | grep -oE '\(Booted\)|\(Shutdown\)|\(Booting\)' || true)
+            echo "estado: $state"
+            if [ "$state" = "(Booted)" ]; then
+              break
+            fi
+            sleep 2
+          done
+          xcrun simctl ui "$udid" appearance light
+
       - name: Build for Simulator
         run: |
           xcodebuild build \
             -scheme Chef \
             -destination "platform=iOS Simulator,name=$device" \
             -derivedDataPath build
-
-      # Um simulador novo nesse runner nasce em modo escuro por padrão —
-      # sem forçar claro aqui, os screenshots e testes "normais" (que
-      # deveriam ser modo claro) saíam escuros de verdade.
-      #
-      # Fica DEPOIS do build de propósito: "xcodebuild build -destination
-      # ...Simulator..." já deixa o simulador rodando sozinho, de forma
-      # confiável (nunca falhou nisso até hoje). As duas tentativas
-      # anteriores faziam "simctl boot" + "simctl bootstatus -b" à mão
-      # ANTES do build — brigando com o próprio boot que o xcodebuild ia
-      # fazer de qualquer jeito — e "bootstatus -b" ficou preso entre 90s
-      # e mais de 40 minutos dependendo do runner. Sem esperar boot
-      # nenhum (o simulador já está de pé), só chamar "simctl ui" direto
-      # é rápido e não tem por que travar.
-      - name: Force light appearance on the simulator
-        timeout-minutes: 1
-        run: xcrun simctl ui "$udid" appearance light
 
       - name: Test on Simulator (unit + UI tests)
         run: |
