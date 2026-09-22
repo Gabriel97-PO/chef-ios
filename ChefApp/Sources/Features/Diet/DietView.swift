@@ -3,9 +3,10 @@ import SwiftData
 import ChefCore
 
 private enum DietTab: String, CaseIterable {
-    case meta = "Meta diária"
-    case fixas = "Refeições fixas"
+    case meta = "Meta"
+    case fixas = "Fixas"
     case receitas = "Receitas"
+    case compras = "Compras"
 }
 
 /// Metas, refeições fixas e receitas (Fase 4 do plano de migração).
@@ -62,6 +63,8 @@ struct DietView: View {
                         FixedMealsTab(fixedMeals: fixedMeals, foods: foods)
                     case .receitas:
                         RecipesTab(recipes: recipes, foods: foods)
+                    case .compras:
+                        ShoppingListView(fixedMeals: fixedMeals, recipes: recipes)
                     }
                 }
                 .padding()

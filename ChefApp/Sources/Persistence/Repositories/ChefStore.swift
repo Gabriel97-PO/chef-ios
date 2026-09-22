@@ -126,3 +126,57 @@ extension RecipeStore {
         try? context.save()
     }
 }
+
+/// Lista de compras (seção 21): lista persistente e independente, que o
+/// usuário edita à mão ou "puxa" da dieta atual — puxar nunca duplica
+/// linha, soma na existente quando o alimento/unidade já está na lista.
+enum ShoppingListStore {
+    static func all(in context: ModelContext) -> [SDShoppingListItem] {
+        (try? context.fetch(FetchDescriptor<SDShoppingListItem>(sortBy: [SortDescriptor(\.createdAt)]))) ?? []
+    }
+
+    @discardableResult
+    static func add(name: String, quantity: Double, unit: PortionUnit, in context: ModelContext) -> SDShoppingListItem {
+        let item = SDShoppingListItem(name: name, quantity: quantity, unit: unit)
+        context.insert(item)
+        try? context.save()
+        return item
+    }
+
+    static func toggle(_ item: SDShoppingListItem, in context: ModelContext) {
+        item.checked.toggle()
+        try? context.save()
+    }
+
+    static func remove(_ item: SDShoppingListItem, in context: ModelContext) {
+        context.delete(item)
+        try? context.save()
+    }
+
+    static func clearChecked(in context: ModelContext) {
+        for item in all(in: context) where item.checked {
+            context.delete(item)
+        }
+        try? context.save()
+    }
+
+    /// Junta os ingredientes das refeições fixas e receitas cadastradas à
+    /// lista — soma na entrada existente (mesmo nome normalizado + mesma
+    /// unidade, ainda não marcada como comprada) em vez de duplicar.
+    static func mergeFromDiet(fixedMeals: [SDFixedMeal], recipes: [SDRecipe], in context: ModelContext) {
+        let entries = ShoppingListBuilder.aggregate(
+            ShoppingListBuilder.fromFixedMeals(fixedMeals.map(\.asFixedMeal)).map { ($0.name, $0.quantity, $0.unit) } +
+            ShoppingListBuilder.fromRecipes(recipes.map(\.asRecipe)).map { ($0.name, $0.quantity, $0.unit) }
+        )
+
+        let existing = all(in: context).filter { !$0.checked }
+        for entry in entries {
+            if let match = existing.first(where: { normalizeText($0.name) == normalizeText(entry.name) && $0.unit == entry.unit }) {
+                match.quantity += entry.quantity
+            } else {
+                context.insert(SDShoppingListItem(name: entry.name, quantity: entry.quantity, unit: entry.unit))
+            }
+        }
+        try? context.save()
+    }
+}

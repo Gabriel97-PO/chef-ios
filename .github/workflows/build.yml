@@ -71,7 +71,12 @@ jobs:
       # porque o passo de modo escuro, que antes deixava tudo de volta em
       # claro no fim, virou opcional e passou a não rodar mais nos pushes
       # normais.
+      # timeout-minutes evita repetir o incidente de 22/set: "simctl
+      # bootstatus -b" ficou preso mais de 40 minutos num runner (o
+      # simulador nunca terminou de reportar o boot), e sem limite o job
+      # só ia parar na hora do timeout padrão do GitHub Actions (6h).
       - name: Force light appearance on the simulator
+        timeout-minutes: 2
         run: |
           xcrun simctl boot "$udid" || true
           xcrun simctl bootstatus "$udid" -b || true

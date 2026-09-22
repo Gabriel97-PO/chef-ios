@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import PhotosUI
 import ChefCore
 
 /// Detalhe de uma refeição de um dia, aberto ao tocar num card da Home.
@@ -23,6 +24,7 @@ struct MealDetailSheet: View {
 
     @State private var newItems: [RecipeIngredient] = []
     @State private var addingFood = false
+    @State private var photoPickerItem: PhotosPickerItem?
 
     private var items: [FoodEntry] { meal?.items ?? [] }
     private var totals: NutritionFacts { NutritionEngine.sumNutrition(items.map(\.nutrition)) }
@@ -50,6 +52,8 @@ struct MealDetailSheet: View {
                                 registeredRow(item)
                             }
                         }
+
+                        photoSection
                     }
 
                     if !planned.isEmpty {
@@ -104,6 +108,67 @@ struct MealDetailSheet: View {
                 .chefGlassCard(cornerRadius: 14, padding: 12)
             }
         }
+    }
+
+    // MARK: - Diário fotográfico (seção 22)
+
+    /// Foto opcional da refeição. Nunca salva sozinha: só grava quando o
+    /// usuário escolhe uma foto de propósito (seção 25 — a câmera do
+    /// scanner nunca persiste a foto capturada por conta própria).
+    @ViewBuilder
+    private var photoSection: some View {
+        if let data = meal?.photoData, let uiImage = UIImage(data: data) {
+            VStack(alignment: .leading, spacing: 8) {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(height: 180)
+                    .frame(maxWidth: .infinity)
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                Button(role: .destructive) {
+                    savePhotoData(nil)
+                } label: {
+                    Label("Remover foto", systemImage: "trash")
+                        .font(.caption.weight(.semibold))
+                }
+            }
+        } else {
+            PhotosPicker(selection: $photoPickerItem, matching: .images) {
+                Label("Adicionar foto da refeição", systemImage: "camera")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Color.chefPrimary)
+            }
+            .onChange(of: photoPickerItem) { _, newItem in
+                Task { await loadPickedPhoto(newItem) }
+            }
+        }
+    }
+
+    private func loadPickedPhoto(_ item: PhotosPickerItem?) async {
+        guard let item, let data = try? await item.loadTransferable(type: Data.self), let uiImage = UIImage(data: data) else { return }
+        // Redimensiona pra no máximo ~800px de largura antes de comprimir —
+        // uma refeição não precisa de resolução de câmera pra ficar
+        // reconhecível, e isso mantém o banco local pequeno.
+        let resized = resize(uiImage, maxWidth: 800)
+        guard let compressed = resized.jpegData(compressionQuality: 0.6) else { return }
+        savePhotoData(compressed)
+        photoPickerItem = nil
+    }
+
+    private func resize(_ image: UIImage, maxWidth: CGFloat) -> UIImage {
+        guard image.size.width > maxWidth else { return image }
+        let scale = maxWidth / image.size.width
+        let newSize = CGSize(width: maxWidth, height: image.size.height * scale)
+        return UIGraphicsImageRenderer(size: newSize).image { _ in
+            image.draw(in: CGRect(origin: .zero, size: newSize))
+        }
+    }
+
+    private func savePhotoData(_ data: Data?) {
+        guard let meal else { return }
+        meal.photoData = data
+        try? context.save()
+        Haptics.selection()
     }
 
     // MARK: - Registrar qualquer alimento (item 7)

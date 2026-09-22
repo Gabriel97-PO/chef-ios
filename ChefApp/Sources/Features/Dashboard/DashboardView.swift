@@ -185,6 +185,11 @@ private struct MealRow: View {
                 }
             }
             Spacer()
+            if meal?.photoData != nil {
+                Image(systemName: "camera.fill")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
             if let totals {
                 Text("\(Int(totals.calories)) kcal · \(totals.protein.formatted(.number.precision(.fractionLength(1))))g")
                     .font(.caption)

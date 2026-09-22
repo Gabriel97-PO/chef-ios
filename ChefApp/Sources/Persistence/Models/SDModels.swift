@@ -140,13 +140,19 @@ final class SDMealEntry {
     var slot: MealSlot
     var items: [FoodEntry]
     var createdAt: Date
+    /// Foto opcional da refeição (seção 22: "diário fotográfico"), JPEG já
+    /// comprimido antes de gravar. `nil` é o padrão — a câmera do scanner
+    /// nunca persiste a foto capturada por conta própria (seção 25:
+    /// privacidade), só entra aqui quando o usuário escolhe anexar.
+    var photoData: Data?
 
-    init(id: String = UUID().uuidString, date: String, slot: MealSlot, items: [FoodEntry], createdAt: Date = Date()) {
+    init(id: String = UUID().uuidString, date: String, slot: MealSlot, items: [FoodEntry], createdAt: Date = Date(), photoData: Data? = nil) {
         self.id = id
         self.date = date
         self.slot = slot
         self.items = items
         self.createdAt = createdAt
+        self.photoData = photoData
     }
 
     var asMealEntry: MealEntry {
@@ -263,5 +269,28 @@ final class SDDietVersion {
         self.document = document
         self.active = active
         self.importedAt = importedAt
+    }
+}
+
+/// Um item da lista de compras (seção 21 da especificação "Será que eu
+/// posso?"). Lista persistente e independente — o usuário pode adicionar
+/// item à mão ou "puxar" da dieta atual (`ShoppingListStore.mergeFromDiet`),
+/// que soma quantidades de itens repetidos em vez de duplicar linha.
+@Model
+final class SDShoppingListItem {
+    @Attribute(.unique) var id: String
+    var name: String
+    var quantity: Double
+    var unit: PortionUnit
+    var checked: Bool
+    var createdAt: Date
+
+    init(id: String = UUID().uuidString, name: String, quantity: Double, unit: PortionUnit, checked: Bool = false, createdAt: Date = Date()) {
+        self.id = id
+        self.name = name
+        self.quantity = quantity
+        self.unit = unit
+        self.checked = checked
+        self.createdAt = createdAt
     }
 }
