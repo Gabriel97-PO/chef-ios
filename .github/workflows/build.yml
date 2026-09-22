@@ -74,9 +74,14 @@ jobs:
       # timeout-minutes evita repetir o incidente de 22/set: "simctl
       # bootstatus -b" ficou preso mais de 40 minutos num runner (o
       # simulador nunca terminou de reportar o boot), e sem limite o job
-      # só ia parar na hora do timeout padrão do GitHub Actions (6h).
+      # só ia parar na hora do timeout padrão do GitHub Actions (6h). 2
+      # minutos acabou sendo curto demais — um boot novo de verdade (com
+      # as migrações de sistema da primeira vez) já leva uns 90s sozinho,
+      # sem sobrar margem pro "simctl ui appearance" depois. 6 minutos dá
+      # folga real pro caso normal e ainda corta bem antes de virar um
+      # incidente de horas.
       - name: Force light appearance on the simulator
-        timeout-minutes: 2
+        timeout-minutes: 6
         run: |
           xcrun simctl boot "$udid" || true
           xcrun simctl bootstatus "$udid" -b || true
