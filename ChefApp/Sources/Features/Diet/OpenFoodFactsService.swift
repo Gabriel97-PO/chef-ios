@@ -152,7 +152,7 @@ private struct OFFNutriments: Decodable {
             return value
         }
         if let raw = try? container.decodeIfPresent(String.self, forKey: key) {
-            return raw.flatMap(Double.init)
+            return Double(raw)
         }
         return nil
     }
