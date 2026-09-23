@@ -145,11 +145,14 @@ private struct OFFNutriments: Decodable {
     }
 
     private static func flexibleDouble(_ container: KeyedDecodingContainer<CodingKeys>, _ key: CodingKeys) throws -> Double? {
-        if let value = try? container.decodeIfPresent(Double.self, forKey: key), let value {
+        // `try?` sobre uma chamada que já devolve `Optional` não aninha
+        // (achata desde a SE-0230) — por isso um único `if let` já basta
+        // aqui, sem precisar de um segundo `let` pra desembrulhar de novo.
+        if let value = try? container.decodeIfPresent(Double.self, forKey: key) {
             return value
         }
-        if let raw = try? container.decodeIfPresent(String.self, forKey: key), let raw {
-            return Double(raw)
+        if let raw = try? container.decodeIfPresent(String.self, forKey: key) {
+            return raw.flatMap(Double.init)
         }
         return nil
     }
