@@ -207,6 +207,7 @@ struct ScanResultSheet: View {
                         .font(.headline)
                         .frame(maxWidth: .infinity)
                         .padding()
+                        .foregroundStyle(Color.chefOnPrimary)
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(.chefPrimary)

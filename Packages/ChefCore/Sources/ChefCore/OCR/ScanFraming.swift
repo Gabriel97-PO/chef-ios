@@ -34,14 +34,23 @@ public enum ScanFraming {
     }
 
     /// Retângulo padrão da moldura de enquadramento: um retângulo portrait
-    /// (proporção comum de tabela nutricional), centralizado, ocupando a
-    /// maior parte da largura da tela.
+    /// (proporção comum de tabela nutricional), centralizado na largura,
+    /// ocupando a maior parte da tela.
+    ///
+    /// Verticalmente não é centralizado na tela inteira: reserva um espaço
+    /// fixo no topo (`topReserved`) pro título e pro campo de nome do
+    /// produto, que ficam sobrepostos por cima da câmera nessa tela — sem
+    /// essa reserva, em telas mais baixas a moldura subia o suficiente pra
+    /// invadir o campo de nome.
     public static func defaultGuideRect(in viewSize: CGSize) -> CGRect {
         let width = viewSize.width * 0.82
         let height = width / 0.72
+        let topReserved: CGFloat = 140
+        let availableHeight = max(viewSize.height - topReserved, height)
+        let y = topReserved + (availableHeight - height) / 2
         return CGRect(
             x: (viewSize.width - width) / 2,
-            y: (viewSize.height - height) / 2,
+            y: y,
             width: width,
             height: height
         )

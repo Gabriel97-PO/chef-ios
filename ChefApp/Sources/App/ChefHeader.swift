@@ -10,14 +10,15 @@ struct ChefHeader: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            ZStack {
-                Circle()
-                    .fill(Color.chefPrimary.gradient)
-                    .frame(width: 34, height: 34)
-                Image(systemName: "fork.knife")
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundStyle(Color.chefOnPrimary)
-            }
+            // O ícone real do app (marca "BrandMark", cópia pequena do
+            // AppIcon) no lugar do talher genérico — troca sozinho entre a
+            // versão clara e escura via appearance do asset, igual o
+            // ícone na tela inicial.
+            Image("BrandMark")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 34, height: 34)
+                .clipShape(RoundedRectangle(cornerRadius: 9))
             VStack(alignment: .leading, spacing: 0) {
                 Text("CHEF")
                     .font(.system(size: 10, weight: .heavy))

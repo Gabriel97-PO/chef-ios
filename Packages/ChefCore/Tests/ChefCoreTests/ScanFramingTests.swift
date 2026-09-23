@@ -51,6 +51,16 @@ final class ScanFramingTests: XCTestCase {
         XCTAssertLessThan(guide.height, viewSize.height)
     }
 
+    /// Regressão: a moldura não pode invadir o título + campo de nome do
+    /// produto sobrepostos no topo da tela do scanner (bug relatado pelo
+    /// usuário — a label do campo de nome ficava por cima da moldura).
+    func testDefaultGuideRectClearsTopChromeOnCommonScreenSizes() {
+        for viewSize in [CGSize(width: 390, height: 844), CGSize(width: 375, height: 667), CGSize(width: 430, height: 932)] {
+            let guide = ScanFraming.defaultGuideRect(in: viewSize)
+            XCTAssertGreaterThanOrEqual(guide.minY, 140, "viewSize \(viewSize)")
+        }
+    }
+
     func testDegenerateSizesFallBackToFullImageInsteadOfCrashing() {
         let result = ScanFraming.imageRect(forViewRect: .zero, viewSize: .zero, imageSize: CGSize(width: 100, height: 200))
         XCTAssertEqual(result, CGRect(x: 0, y: 0, width: 100, height: 200))

@@ -93,6 +93,7 @@ struct DietImportView: View {
                     .font(.headline)
                     .frame(maxWidth: .infinity)
                     .padding()
+                    .foregroundStyle(Color.chefOnPrimary)
             }
             .buttonStyle(.borderedProminent)
             .tint(.chefPrimary)
@@ -190,6 +191,7 @@ struct DietImportView: View {
                     applyDiet(result)
                 } label: {
                     Label("Aplicar dieta", systemImage: "checkmark.circle.fill")
+                        .foregroundStyle(Color.chefOnPrimary)
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(.chefPrimary)
@@ -220,6 +222,7 @@ struct DietImportView: View {
             Button("Ver minha dieta") { dismiss() }
                 .buttonStyle(.borderedProminent)
                 .tint(.chefPrimary)
+                .foregroundStyle(Color.chefOnPrimary)
         }
         .frame(maxWidth: .infinity)
         .padding(.top, 60)

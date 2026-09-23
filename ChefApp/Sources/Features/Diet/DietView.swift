@@ -119,6 +119,7 @@ private struct GoalForm: View {
                     .font(.headline)
                     .frame(maxWidth: .infinity)
                     .padding()
+                    .foregroundStyle(Color.chefOnPrimary)
             }
             .buttonStyle(.borderedProminent)
             .tint(.chefPrimary)

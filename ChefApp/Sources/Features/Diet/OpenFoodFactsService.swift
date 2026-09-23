@@ -125,4 +125,32 @@ private struct OFFNutriments: Decodable {
         case fiberPer100g = "fiber_100g"
         case sodiumPer100g = "sodium_100g"
     }
+
+    // O Open Food Facts serializa esses campos ora como número, ora como
+    // string ("88.1") — inconsistente até entre produtos diferentes na
+    // mesma resposta. `Decodable` sintetizado falha o JSON inteiro na
+    // primeira inconsistência (é por isso que a busca online "não
+    // acontecia": qualquer produto com um campo em formato de string
+    // derrubava a decodificação da resposta toda, silenciosamente, e caía
+    // no erro genérico de rede). Aceitar os dois formatos aqui é o que
+    // resolve.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        caloriesPer100g = try Self.flexibleDouble(container, .caloriesPer100g)
+        proteinsPer100g = try Self.flexibleDouble(container, .proteinsPer100g)
+        carbohydratesPer100g = try Self.flexibleDouble(container, .carbohydratesPer100g)
+        fatPer100g = try Self.flexibleDouble(container, .fatPer100g)
+        fiberPer100g = try Self.flexibleDouble(container, .fiberPer100g)
+        sodiumPer100g = try Self.flexibleDouble(container, .sodiumPer100g)
+    }
+
+    private static func flexibleDouble(_ container: KeyedDecodingContainer<CodingKeys>, _ key: CodingKeys) throws -> Double? {
+        if let value = try? container.decodeIfPresent(Double.self, forKey: key), let value {
+            return value
+        }
+        if let raw = try? container.decodeIfPresent(String.self, forKey: key), let raw {
+            return Double(raw)
+        }
+        return nil
+    }
 }

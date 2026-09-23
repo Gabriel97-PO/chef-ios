@@ -77,6 +77,7 @@ struct AppleHealthCard: View {
                 } label: {
                     Label("Importar peso", systemImage: "square.and.arrow.down")
                         .font(.caption.weight(.bold))
+                        .foregroundStyle(Color.chefOnPrimary)
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(Color.chefPrimary)

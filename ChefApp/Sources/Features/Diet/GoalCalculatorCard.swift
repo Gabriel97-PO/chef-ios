@@ -118,6 +118,7 @@ struct GoalCalculatorCard: View {
                     .font(.subheadline.weight(.bold))
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 10)
+                    .foregroundStyle(Color.chefOnPrimary)
             }
             .buttonStyle(.borderedProminent)
             .tint(applied ? Color.chefSuccess : Color.chefPrimary)
@@ -179,40 +180,11 @@ struct GoalCalculatorCard: View {
     }
 
     private func optionalNumberField(label: String, value: Binding<Double?>, range: ClosedRange<Double>) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(label).font(.caption2).foregroundStyle(.secondary)
-            TextField("—", text: Binding(
-                get: { value.wrappedValue.map { $0.formatted(.number.precision(.fractionLength(0))) } ?? "" },
-                set: { raw in
-                    let parsed = Double(raw.replacingOccurrences(of: ",", with: "."))
-                    value.wrappedValue = parsed.map { min(max($0, range.lowerBound), range.upperBound) }
-                    save()
-                }
-            ))
-            .keyboardType(.numberPad)
-            .font(.headline)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(10)
-        .background(.thinMaterial, in: .rect(cornerRadius: 12))
+        OptionalNumberField(label: label, value: value, range: range, onCommit: save)
     }
 
     private func optionalIntField(label: String, value: Binding<Int?>, range: ClosedRange<Int>) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(label).font(.caption2).foregroundStyle(.secondary)
-            TextField("—", text: Binding(
-                get: { value.wrappedValue.map(String.init) ?? "" },
-                set: { raw in
-                    value.wrappedValue = Int(raw).map { min(max($0, range.lowerBound), range.upperBound) }
-                    save()
-                }
-            ))
-            .keyboardType(.numberPad)
-            .font(.headline)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(10)
-        .background(.thinMaterial, in: .rect(cornerRadius: 12))
+        OptionalIntField(label: label, value: value, range: range, onCommit: save)
     }
 
     private func picker<T: Hashable & Identifiable>(
@@ -249,5 +221,96 @@ struct GoalCalculatorCard: View {
 
     private func save() {
         try? context.save()
+    }
+}
+
+/// Campo numérico com estado de digitação próprio, separado do valor
+/// persistido — o bug reportado no campo de idade era o valor formatado e
+/// sujeito a `min(max(...))` reescrevendo o texto a cada tecla (digitar
+/// "2" já virava "10" por causa do clamp no meio da digitação, antes do
+/// segundo dígito entrar). Aqui o texto só sincroniza com o valor real ao
+/// perder o foco, então o clamp de faixa só acontece no valor final.
+private struct OptionalIntField: View {
+    let label: String
+    @Binding var value: Int?
+    let range: ClosedRange<Int>
+    let onCommit: () -> Void
+
+    @State private var text: String = ""
+    @FocusState private var focused: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(label).font(.caption2).foregroundStyle(.secondary)
+            TextField("—", text: $text)
+                .keyboardType(.numberPad)
+                .font(.headline)
+                .focused($focused)
+                .onAppear { syncFromValue() }
+                .onChange(of: value) { _, _ in if !focused { syncFromValue() } }
+                .onChange(of: focused) { _, isFocused in
+                    if !isFocused { commit() }
+                }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(10)
+        .background(.thinMaterial, in: .rect(cornerRadius: 12))
+    }
+
+    private func syncFromValue() {
+        text = value.map(String.init) ?? ""
+    }
+
+    private func commit() {
+        guard let parsed = Int(text) else {
+            if value != nil { value = nil; onCommit() }
+            return
+        }
+        let clamped = min(max(parsed, range.lowerBound), range.upperBound)
+        if value != clamped { value = clamped; onCommit() }
+        text = String(clamped)
+    }
+}
+
+/// Mesma ideia de `OptionalIntField`, pra campos decimais (altura).
+private struct OptionalNumberField: View {
+    let label: String
+    @Binding var value: Double?
+    let range: ClosedRange<Double>
+    let onCommit: () -> Void
+
+    @State private var text: String = ""
+    @FocusState private var focused: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(label).font(.caption2).foregroundStyle(.secondary)
+            TextField("—", text: $text)
+                .keyboardType(.numberPad)
+                .font(.headline)
+                .focused($focused)
+                .onAppear { syncFromValue() }
+                .onChange(of: value) { _, _ in if !focused { syncFromValue() } }
+                .onChange(of: focused) { _, isFocused in
+                    if !isFocused { commit() }
+                }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(10)
+        .background(.thinMaterial, in: .rect(cornerRadius: 12))
+    }
+
+    private func syncFromValue() {
+        text = value.map { $0.formatted(.number.precision(.fractionLength(0))) } ?? ""
+    }
+
+    private func commit() {
+        guard let parsed = Double(text.replacingOccurrences(of: ",", with: ".")) else {
+            if value != nil { value = nil; onCommit() }
+            return
+        }
+        let clamped = min(max(parsed, range.lowerBound), range.upperBound)
+        if value != clamped { value = clamped; onCommit() }
+        text = clamped.formatted(.number.precision(.fractionLength(0)))
     }
 }

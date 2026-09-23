@@ -99,6 +99,7 @@ struct MealDetailSheet: View {
                         } label: {
                             Label("Registrar", systemImage: "plus.circle.fill")
                                 .font(.caption.weight(.bold))
+                                .foregroundStyle(Color.chefOnPrimary)
                         }
                         .buttonStyle(.borderedProminent)
                         .tint(Color.chefPrimary)
@@ -190,6 +191,7 @@ struct MealDetailSheet: View {
                     } label: {
                         Label("Registrar \(newItems.count) item\(newItems.count == 1 ? "" : "s")", systemImage: "checkmark")
                             .font(.subheadline.weight(.bold))
+                            .foregroundStyle(Color.chefOnPrimary)
                     }
                     .buttonStyle(.borderedProminent)
                     .tint(Color.chefPrimary)
