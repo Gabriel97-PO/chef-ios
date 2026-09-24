@@ -69,17 +69,36 @@ struct ChefLoadingView: View {
                 }
 
                 // Chapéu sempre parado — só a faixa/folha animam (AC.03).
-                // `chefFigure` (quase branco/quase preto) precisa do
-                // contorno sutil pra não sumir contra o fundo do sistema,
-                // quase da mesma cor.
-                ChefHatShape()
-                    .fill(Color.chefFigure)
-                    .overlay(ChefHatShape().stroke(Color.chefFigureOutline, lineWidth: 1.5))
-                    .frame(width: 140, height: 140)
+                // Contorno na cor de marca (não mais um cinza sutil) pra
+                // bater com o ícone real (18/set/2026): o chapéu inteiro
+                // tem a silhueta contornada em laranja/Volt Green, não só
+                // a faixa e a folha. `ChefHatShape` é um path composto com
+                // subpaths sobrepostos (corpo + coroa + pontas) — dar
+                // `.stroke` nele direto desenharia costura visível em cada
+                // sobreposição, porque stroke traça cada subpath
+                // isoladamente. Preenchimento, ao contrário, funde
+                // sobreposições pela regra de enchimento (nonZero) sem
+                // costura — por isso o contorno aqui é construído com dois
+                // preenchimentos empilhados (cópia maior na cor de marca
+                // atrás, cópia no tamanho real por cima) em vez de stroke.
+                ZStack {
+                    ChefHatShape()
+                        .scale(1.055)
+                        .fill(Color.chefPrimary)
+                    ChefHatShape()
+                        .fill(Color.chefFigure)
+                }
+                .frame(width: 140, height: 140)
 
                 ZStack {
                     ChefStripeShape().fill(Color.chefPrimary)
-                    ChefLeafShape().fill(Color.chefPrimary)
+                    // A folha é um contorno oco no ícone real, não uma
+                    // mancha sólida — e, diferente do chapéu, o path dela
+                    // é um polígono único fechado (sem subpaths
+                    // sobrepostos), então dá pra usar `.stroke` direto
+                    // sem costura.
+                    ChefLeafShape()
+                        .stroke(Color.chefPrimary, style: StrokeStyle(lineWidth: 5, lineCap: .round, lineJoin: .round))
                 }
                 .frame(width: 140, height: 140)
                 .shadow(color: Color.chefPrimary.opacity(leafGlow), radius: 20)

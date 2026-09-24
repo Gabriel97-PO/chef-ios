@@ -43,14 +43,6 @@ extension Color {
         dark: (0.039, 0.039, 0.039)    // #0A0A0A
     )
 
-    /// Contorno sutil do chapéu — sem ele, `chefFigure` (quase branco no
-    /// claro, quase preto no escuro) some contra um fundo praticamente da
-    /// mesma cor. Mesmos tons usados na geração do ícone do app.
-    static let chefFigureOutline = chefDynamic(
-        light: (0.863, 0.847, 0.820),  // cinza claro
-        dark: (0.180, 0.180, 0.180)    // cinza escuro
-    )
-
     private static func chefDynamic(
         light: (CGFloat, CGFloat, CGFloat),
         dark: (CGFloat, CGFloat, CGFloat)
