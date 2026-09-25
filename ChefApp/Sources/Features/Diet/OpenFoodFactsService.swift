@@ -55,20 +55,32 @@ enum OpenFoodFactsService {
         do {
             (data, response) = try await URLSession.shared.data(for: request)
         } catch {
+            // Diagnóstico temporário: a busca falha rápido no simulador/
+            // dispositivo mas funciona sempre via curl no terminal — precisa
+            // do erro real (domínio + código) do URLSession pra achar a
+            // causa, já que "network" genérico escondia isso até agora.
+            print("[OpenFoodFacts] falha de transporte: \(error)")
             throw OpenFoodFactsError.network
         }
 
-        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+        guard let http = response as? HTTPURLResponse else {
+            print("[OpenFoodFacts] resposta sem HTTPURLResponse: \(response)")
+            throw OpenFoodFactsError.network
+        }
+        guard (200..<300).contains(http.statusCode) else {
+            print("[OpenFoodFacts] status HTTP inesperado: \(http.statusCode)")
             throw OpenFoodFactsError.network
         }
 
-        guard let decoded = try? JSONDecoder().decode(OFFSearchResponse.self, from: data) else {
+        do {
+            let decoded = try JSONDecoder().decode(OFFSearchResponse.self, from: data)
+            let results = decoded.products.compactMap(\.asNetworkFoodResult)
+            guard !results.isEmpty else { throw OpenFoodFactsError.noResults }
+            return results
+        } catch let decodingError as DecodingError {
+            print("[OpenFoodFacts] falha ao decodificar: \(decodingError)")
             throw OpenFoodFactsError.network
         }
-
-        let results = decoded.products.compactMap(\.asNetworkFoodResult)
-        guard !results.isEmpty else { throw OpenFoodFactsError.noResults }
-        return results
     }
 }
 
