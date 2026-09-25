@@ -21,6 +21,7 @@ struct ProfileView: View {
                     WeightCard(weights: weights)
                     AppleHealthCard()
                     MealRemindersCard()
+                    DeveloperToolsCard()
                     AboutCard()
                 }
                 .padding()
@@ -171,6 +172,30 @@ private struct WeightCard: View {
             try? await Task.sleep(for: .seconds(1.5))
             logged = false
         }
+    }
+}
+
+/// Ferramentas internas — hoje só a pré-visualização da splash. Fica
+/// visível de propósito (não atrás de `#if DEBUG`): o `.ipa` de sideload é
+/// compilado em Release, então qualquer coisa só de DEBUG nunca chegaria
+/// no aparelho, que é o único jeito de ver a tela de verdade sem Xcode
+/// local.
+private struct DeveloperToolsCard: View {
+    var body: some View {
+        NavigationLink {
+            ChefLoadingPreviewView()
+        } label: {
+            HStack {
+                Label("Pré-visualizar splash", systemImage: "wand.and.stars")
+                    .font(.subheadline.weight(.semibold))
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+            }
+            .foregroundStyle(.primary)
+        }
+        .chefGlassCard()
     }
 }
 

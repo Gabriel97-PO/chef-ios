@@ -32,10 +32,14 @@ import SwiftUI
 ///   ainda não é este.
 struct ChefLoadingView: View {
     var onFinished: () -> Void
+    /// Só pra tela de preview: simula "reduzir movimento" sem precisar
+    /// trocar o ajuste do sistema pra comparar as duas versões.
+    var forceReduceMotion = false
 
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
+    private var reduceMotion: Bool { forceReduceMotion || systemReduceMotion }
 
-    @State private var leafScale: CGFloat = 0.92
+    @State private var leafScale: CGFloat = ChefLoadingConfig.introStartScale
     @State private var leafRotation: Double = 0
     @State private var leafGlow: Double = 0
     @State private var particlesVisible = false
@@ -55,16 +59,16 @@ struct ChefLoadingView: View {
 
             ZStack {
                 if particlesVisible {
-                    ForEach(0..<8, id: \.self) { index in
-                        ChefLoadingParticle(index: index)
+                    ForEach(0..<ChefLoadingConfig.particleCount, id: \.self) { index in
+                        ChefLoadingParticle(index: index, total: ChefLoadingConfig.particleCount)
                     }
                 }
 
                 if showRing {
                     Circle()
                         .trim(from: 0, to: ringTrim)
-                        .stroke(Color.chefPrimary, style: StrokeStyle(lineWidth: 6, lineCap: .round))
-                        .frame(width: 184, height: 184)
+                        .stroke(Color.chefPrimary, style: StrokeStyle(lineWidth: ChefLoadingConfig.ringLineWidth, lineCap: .round))
+                        .frame(width: ChefLoadingConfig.ringDiameter, height: ChefLoadingConfig.ringDiameter)
                         .rotationEffect(.degrees(ringRotation))
                 }
 
@@ -88,7 +92,7 @@ struct ChefLoadingView: View {
                     ChefHatShape()
                         .fill(Color.chefFigure)
                 }
-                .frame(width: 140, height: 140)
+                .frame(width: ChefLoadingConfig.markSize, height: ChefLoadingConfig.markSize)
 
                 ZStack {
                     ChefStripeShape().fill(Color.chefPrimary)
@@ -100,30 +104,30 @@ struct ChefLoadingView: View {
                     ChefLeafShape()
                         .stroke(Color.chefPrimary, style: StrokeStyle(lineWidth: 5, lineCap: .round, lineJoin: .round))
                 }
-                .frame(width: 140, height: 140)
+                .frame(width: ChefLoadingConfig.markSize, height: ChefLoadingConfig.markSize)
                 .shadow(color: Color.chefPrimary.opacity(leafGlow), radius: 20)
                 .scaleEffect(leafScale)
                 // Ancorado perto da base da folha (onde ela "nasce" do
-                // chapéu), não no centro — assim o balanço lê como um
-                // talo balançando, não a folha inteira girando no lugar.
+                // chapéu), não no centro — assim a rotação lê como um talo
+                // balançando, não a folha inteira girando no lugar.
                 .rotationEffect(.degrees(leafRotation), anchor: UnitPoint(x: 0.70, y: 0.91))
 
                 if showFeedbackStrokes {
                     ChefFeedbackStrokes()
-                        .frame(width: 140, height: 140)
+                        .frame(width: ChefLoadingConfig.markSize, height: ChefLoadingConfig.markSize)
                 }
 
                 if showCheck {
                     Circle()
                         .fill(Color.chefSuccess)
-                        .frame(width: 44, height: 44)
+                        .frame(width: ChefLoadingConfig.checkBadgeDiameter, height: ChefLoadingConfig.checkBadgeDiameter)
                         .overlay(
                             Image(systemName: "checkmark")
                                 .font(.system(size: 18, weight: .bold))
                                 .foregroundStyle(.white)
                         )
                         .scaleEffect(checkScale)
-                        .offset(x: 52, y: 54)
+                        .offset(x: ChefLoadingConfig.checkBadgeOffset.x, y: ChefLoadingConfig.checkBadgeOffset.y)
                 }
             }
             .opacity(markOpacity)
@@ -144,40 +148,52 @@ struct ChefLoadingView: View {
     }
 
     private func runSequence() async {
-        // 1 · início (200ms, linear) — ícone estático em repouso.
-        try? await sleep(200)
+        // 1 · início — ícone estático em repouso.
+        try? await sleep(ChefLoadingConfig.stage1IntroMs)
 
-        // 2 · ativação (350ms, easeOut(.2,0,0,1)) — a folha ganha vida:
-        // escala de 0.92 pra 1.0, brilho do acento, e entra num balanço
-        // contínuo (o "movimento relacionado ao logo" que dá a sensação
-        // de folha viva, em vez de um ícone estático com glow). O
-        // restante do ícone (o chapéu) permanece parado o tempo todo.
+        // 2 · ativação — a folha ganha vida: escala de 0.92 pra 1.0, brilho
+        // do acento, e um ciclo só de rotação (-8°→0°, spring) — acorda e
+        // assenta, não fica balançando o resto da splash. O chapéu
+        // permanece parado o tempo todo (AC.03).
         if reduceMotion {
             withAnimation(.easeOut(duration: 0.2)) { leafScale = 1.0; leafGlow = 0.55 }
+            try? await sleep(ChefLoadingConfig.stage2ActivationMs)
         } else {
+            let half = ChefLoadingConfig.stage2ActivationMs / 2
             Haptics.selection()
-            withAnimation(.timingCurve(0.2, 0, 0, 1, duration: 0.35)) {
+            withAnimation(.timingCurve(0.22, 1, 0.36, 1, duration: 0.35)) {
                 leafScale = 1.0
-                leafGlow = 0.7
             }
-            leafRotation = -9
-            withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true)) {
-                leafRotation = 9
+            withAnimation(.easeOut(duration: Double(half) / 1000)) {
+                leafGlow = ChefLoadingConfig.leafActivationGlow
             }
+            withAnimation(.interpolatingSpring(mass: 1, stiffness: 260, damping: 14)) {
+                leafRotation = ChefLoadingConfig.leafActivationRotationDegrees
+            }
+            try? await sleep(half)
+            // Volta ao repouso — "pulsa uma vez", não fica brilhando pro
+            // resto da splash.
+            withAnimation(.interpolatingSpring(mass: 1, stiffness: 260, damping: 16)) {
+                leafRotation = 0
+            }
+            withAnimation(.easeIn(duration: Double(half) / 1000)) {
+                leafGlow = 0
+            }
+            try? await sleep(half)
         }
-        try? await sleep(350)
 
-        // 3 · transição (300ms, easeInOut) — partículas se expandem a
+        // 3 · transição — partículas (círculos e mini-folhas) se expandem a
         // partir do ícone sem deslocá-lo do centro.
         if !reduceMotion {
             withAnimation(.easeInOut(duration: 0.3)) { particlesVisible = true }
         }
-        try? await sleep(300)
+        try? await sleep(ChefLoadingConfig.stage3TransitionMs)
 
         // 4 · progresso (indeterminado) — condicional: só aparece se o
-        // carregamento ainda não tiver terminado (RN.05/06). Hoje os
-        // dados do Chef são locais e já estão prontos nesse ponto, então
-        // isso não dispara na prática — ver nota na doc do tipo.
+        // carregamento ainda não tiver terminado (RN.05/06). Hoje os dados
+        // do Chef são locais e já estão prontos nesse ponto, então isso não
+        // dispara na prática — decisão deliberada de não fingir um loading
+        // que não existe, só pra bater com a duração "ideal" da splash.
         let dataAlreadyReady = true
         if !dataAlreadyReady {
             withAnimation(.easeIn(duration: 0.2)) {
@@ -189,11 +205,11 @@ struct ChefLoadingView: View {
                     ringRotation = 360
                 }
             }
-            try? await sleep(1200)
+            try? await sleep(ChefLoadingConfig.stage4ProgressMs)
         }
 
-        // 5 · conclusão (400ms, spring rigidez 300/amortecimento 22) — o
-        // ícone volta com escala 0.9→1.0 e o selo de check surge.
+        // 5 · conclusão — o ícone volta com escala e spring, e o selo de
+        // check surge.
         particlesVisible = false
         if showRing {
             withAnimation(.easeOut(duration: 0.2)) { showRing = false }
@@ -207,20 +223,21 @@ struct ChefLoadingView: View {
             }
         }
         Haptics.success()
-        try? await sleep(400)
+        try? await sleep(ChefLoadingConfig.stage5CompletionMs)
 
-        // 6 · feedback (300ms, easeOut) — micro feedback: traços curtos
-        // partindo da folha, expandindo e desaparecendo.
+        // 6 · feedback — traços curtos partindo do canto superior direito da
+        // marca (não o mesmo canto do badge de check), expandindo e
+        // desaparecendo.
         if !reduceMotion {
             withAnimation(.easeOut(duration: 0.3)) { showFeedbackStrokes = true }
         }
-        try? await sleep(300)
+        try? await sleep(ChefLoadingConfig.stage6FeedbackMs)
 
         // Saída: fade sobreposto ao estado 6, sem tela preta intermediária.
         withAnimation(.easeInOut(duration: 0.25)) {
             markOpacity = 0
         }
-        try? await sleep(250)
+        try? await sleep(ChefLoadingConfig.exitFadeMs)
         onFinished()
     }
 
@@ -229,38 +246,69 @@ struct ChefLoadingView: View {
     }
 }
 
+/// Mistura círculos e mini-folhas alternados por índice, cada um com uma
+/// leve rotação própria enquanto voa — círculo sozinho ficava monótono
+/// pro número de partículas que o estágio 3 pede.
 private struct ChefLoadingParticle: View {
     let index: Int
+    let total: Int
     @State private var animate = false
 
-    private var angle: Double { Double(index) / 8 * 360 }
+    private var angle: Double { Double(index) / Double(total) * 360 }
+    private var isLeaf: Bool { index.isMultiple(of: 2) }
+    private var spinDegrees: Double { isLeaf ? 50 : 20 }
 
     var body: some View {
-        Circle()
-            .fill(Color.chefPrimary)
-            .frame(width: 6, height: 6)
-            .offset(
-                x: animate ? CGFloat(cos(angle * .pi / 180)) * 96 : 0,
-                y: animate ? CGFloat(sin(angle * .pi / 180)) * 96 : 0
-            )
-            .opacity(animate ? 0 : 1)
-            .onAppear {
-                withAnimation(.easeOut(duration: 0.6).delay(Double(index) * 0.03)) {
-                    animate = true
-                }
+        Group {
+            if isLeaf {
+                MiniLeafShape()
+                    .fill(Color.chefPrimary)
+                    .frame(width: 9, height: 11)
+            } else {
+                Circle()
+                    .fill(Color.chefPrimary)
+                    .frame(width: 6, height: 6)
             }
+        }
+        .rotationEffect(.degrees(animate ? spinDegrees : 0))
+        .offset(
+            x: animate ? CGFloat(cos(angle * .pi / 180)) * ChefLoadingConfig.particleTravelDistance : 0,
+            y: animate ? CGFloat(sin(angle * .pi / 180)) * ChefLoadingConfig.particleTravelDistance : 0
+        )
+        .opacity(animate ? 0 : 1)
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.6).delay(Double(index) * 0.03)) {
+                animate = true
+            }
+        }
     }
 }
 
-/// Estado 6 — três traços curtos partindo da folha (canto inferior
-/// direito da marca), expandindo e desaparecendo.
+/// Silhueta simples de folha pras mini-partículas do estágio 3 — não é a
+/// mesma `ChefLeafShape` da marca (essa é ancorada e escalada pro ícone
+/// inteiro); aqui é só um contorno de gota independente, pequeno o
+/// bastante pra ler como "folha" a distância.
+private struct MiniLeafShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: rect.midX, y: rect.minY))
+        path.addQuadCurve(to: CGPoint(x: rect.midX, y: rect.maxY), control: CGPoint(x: rect.maxX, y: rect.midY))
+        path.addQuadCurve(to: CGPoint(x: rect.midX, y: rect.minY), control: CGPoint(x: rect.minX, y: rect.midY))
+        return path
+    }
+}
+
+/// Estado 6 — traços curtos partindo do canto superior direito da marca
+/// (não o mesmo canto do badge de check, que fica embaixo), expandindo e
+/// desaparecendo.
 private struct ChefFeedbackStrokes: View {
     @State private var animate = false
 
     var body: some View {
         ZStack {
-            ForEach(0..<3, id: \.self) { index in
-                let angle = Double(index) * 22 - 22
+            ForEach(0..<ChefLoadingConfig.sparkCount, id: \.self) { index in
+                let spread = Double(ChefLoadingConfig.sparkCount - 1) * 11
+                let angle = Double(index) * 22 - spread
                 Capsule()
                     .fill(Color.chefPrimary)
                     .frame(width: 3, height: 14)
@@ -269,7 +317,7 @@ private struct ChefFeedbackStrokes: View {
                     .rotationEffect(.degrees(angle))
             }
         }
-        .offset(x: 52, y: 54)
+        .offset(x: ChefLoadingConfig.sparkOffset.x, y: ChefLoadingConfig.sparkOffset.y)
         .onAppear {
             withAnimation(.easeOut(duration: 0.3)) { animate = true }
         }
