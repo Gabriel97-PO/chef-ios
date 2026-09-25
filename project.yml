@@ -43,7 +43,14 @@ targets:
         SWIFT_VERSION: 6.0
         TARGETED_DEVICE_FAMILY: "1"
         MARKETING_VERSION: "1.0"
-        CURRENT_PROJECT_VERSION: "1"
+        # O número de build nunca mudou desde o primeiro sideload — o iOS
+        # guarda o ícone em cache por app/build no SpringBoard, e reinstalar
+        # por cima do mesmo bundle id + build via AltStore/SideStore não
+        # garante que esse cache seja invalidado (relatado: ícone de
+        # notificação continuava mostrando a versão antiga mesmo depois do
+        # ícone já estar certo no bundle). Incrementar aqui a cada release
+        # força o iOS a tratar como build novo de verdade.
+        CURRENT_PROJECT_VERSION: "2"
         ENABLE_PREVIEWS: YES
 
   ChefTests:
