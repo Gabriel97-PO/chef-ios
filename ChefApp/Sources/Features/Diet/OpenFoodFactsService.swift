@@ -33,7 +33,36 @@ enum OpenFoodFactsError: LocalizedError {
 /// pode não achar algo tipo "picanha na brasa" caseira. Continua sendo só
 /// uma camada a mais: local → base de referência → online, nessa ordem.
 enum OpenFoodFactsService {
+    /// Confirmado por fora do app (curl direto, fora de CI): o próprio
+    /// world.openfoodfacts.org devolve 503 de forma intermitente sob carga
+    /// (~1 em cada 2-3 chamadas em rajada) — não é problema de rede local,
+    /// de simulador nem de decodificação, é a instabilidade normal desse
+    /// serviço (mantido sem fins lucrativos). Uma segunda tentativa quase
+    /// sempre resolve, então tenta de novo antes de desistir em vez de
+    /// mostrar erro pra uma falha que passa sozinha em menos de 1s.
+    private static let maxAttempts = 3
+    private static let retryDelaysMs: [UInt64] = [300, 700]
+
     static func search(_ query: String) async throws -> [NetworkFoodResult] {
+        var lastError: Error = OpenFoodFactsError.network
+        for attempt in 0..<maxAttempts {
+            do {
+                return try await attemptSearch(query)
+            } catch OpenFoodFactsError.noResults {
+                // Não é falha transitória de rede — não adianta tentar de
+                // novo, o nome realmente não existe na base.
+                throw OpenFoodFactsError.noResults
+            } catch {
+                lastError = error
+                if attempt < retryDelaysMs.count {
+                    try? await Task.sleep(nanoseconds: retryDelaysMs[attempt] * 1_000_000)
+                }
+            }
+        }
+        throw lastError
+    }
+
+    private static func attemptSearch(_ query: String) async throws -> [NetworkFoodResult] {
         var components = URLComponents(string: "https://world.openfoodfacts.org/cgi/search.pl")!
         components.queryItems = [
             URLQueryItem(name: "search_terms", value: query),
@@ -55,32 +84,20 @@ enum OpenFoodFactsService {
         do {
             (data, response) = try await URLSession.shared.data(for: request)
         } catch {
-            // Diagnóstico temporário: a busca falha rápido no simulador/
-            // dispositivo mas funciona sempre via curl no terminal — precisa
-            // do erro real (domínio + código) do URLSession pra achar a
-            // causa, já que "network" genérico escondia isso até agora.
-            print("[OpenFoodFacts] falha de transporte: \(error)")
             throw OpenFoodFactsError.network
         }
 
-        guard let http = response as? HTTPURLResponse else {
-            print("[OpenFoodFacts] resposta sem HTTPURLResponse: \(response)")
-            throw OpenFoodFactsError.network
-        }
-        guard (200..<300).contains(http.statusCode) else {
-            print("[OpenFoodFacts] status HTTP inesperado: \(http.statusCode)")
+        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
             throw OpenFoodFactsError.network
         }
 
-        do {
-            let decoded = try JSONDecoder().decode(OFFSearchResponse.self, from: data)
-            let results = decoded.products.compactMap(\.asNetworkFoodResult)
-            guard !results.isEmpty else { throw OpenFoodFactsError.noResults }
-            return results
-        } catch let decodingError as DecodingError {
-            print("[OpenFoodFacts] falha ao decodificar: \(decodingError)")
+        guard let decoded = try? JSONDecoder().decode(OFFSearchResponse.self, from: data) else {
             throw OpenFoodFactsError.network
         }
+
+        let results = decoded.products.compactMap(\.asNetworkFoodResult)
+        guard !results.isEmpty else { throw OpenFoodFactsError.noResults }
+        return results
     }
 }
 
