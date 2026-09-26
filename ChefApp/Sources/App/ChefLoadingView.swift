@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /// Splash "morphing container" (fluxo de marca, estilo 2): um único
 /// container que muda de forma/tamanho/cor entre 7 etapas — quadrado com o
@@ -137,7 +138,7 @@ struct ChefLoadingView: View {
         let diameter = ChefLoadingConfig.circleDiameter - ChefLoadingConfig.ringInset * 2
         return CheckmarkShape()
             .trim(from: 0, to: checkTrim)
-            .stroke(ChefLoadingConfig.screenBackground, style: StrokeStyle(lineWidth: 6, lineCap: .round, lineJoin: .round))
+            .stroke(ChefLoadingConfig.onAccent, style: StrokeStyle(lineWidth: 6, lineCap: .round, lineJoin: .round))
             .frame(width: diameter, height: diameter)
     }
 
@@ -148,7 +149,7 @@ struct ChefLoadingView: View {
             .overlay(
                 Image(systemName: "checkmark")
                     .font(.system(size: 16, weight: .bold))
-                    .foregroundStyle(Color.chefOnPrimary)
+                    .foregroundStyle(ChefLoadingConfig.onAccent)
             )
             .offset(x: ChefLoadingConfig.checkBadgeOffset.x, y: ChefLoadingConfig.checkBadgeOffset.y)
     }
@@ -164,13 +165,13 @@ struct ChefLoadingView: View {
         // 1 · entrada — o container inteiro (não só o ícone) aparece com
         // fade + scale 0.9→1; o ícone já está visível dentro dele, sem
         // crossfade próprio nessa primeira entrada.
-        withAnimation(anim(.easeOut(duration: 0.3))) {
+        withAnimation(anim(ChefLoadingConfig.fadeInEasing(ChefLoadingConfig.stage1EntryMs))) {
             containerPopScale = 1.0
             containerOpacity = 1.0
         }
         await sleep(ChefLoadingConfig.stage1EntryMs)
 
-        // 2 · ativação — a folha faz um ciclo de rotação (0°→-8°→0°) e a
+        // 2 · ativação — a folha faz um ciclo de rotação (0°→ângulo→0°) e a
         // faixa da base brilha uma vez. Partículas radiais são opcionais
         // (ChefLoadingConfig.particlesEnabled, desligada por padrão) e
         // entrariam aqui quando ligadas — não implementadas ainda.
@@ -178,14 +179,14 @@ struct ChefLoadingView: View {
         withAnimation(anim(.interpolatingSpring(mass: 1, stiffness: 260, damping: 14))) {
             leafRotation = ChefLoadingConfig.leafActivationRotationDegrees
         }
-        withAnimation(anim(.easeOut(duration: Double(half) / 1000))) {
+        withAnimation(anim(ChefLoadingConfig.fadeInEasing(half))) {
             stripeGlow = 0.8
         }
         await sleep(half)
         withAnimation(anim(.interpolatingSpring(mass: 1, stiffness: 260, damping: 16))) {
             leafRotation = 0
         }
-        withAnimation(anim(.easeIn(duration: Double(half) / 1000))) {
+        withAnimation(anim(ChefLoadingConfig.fadeOutEasing(half))) {
             stripeGlow = 0
         }
         await sleep(half)
@@ -196,7 +197,7 @@ struct ChefLoadingView: View {
         // aparece na próxima etapa) — não é uma troca pareada, são duas
         // saídas/entradas soltas em sequência.
         exit($iconLayer)
-        withAnimation(anim(ChefLoadingConfig.containerSpring)) {
+        withAnimation(anim(ChefLoadingConfig.shapeSpring)) {
             containerSide = ChefLoadingConfig.circleDiameter
             containerCornerRadius = ChefLoadingConfig.circleCornerRadius
             containerOutlineOpacity = 0
@@ -205,64 +206,75 @@ struct ChefLoadingView: View {
         await sleep(ChefLoadingConfig.stage3MorphToCircleMs)
 
         // 4 · progresso — anel com trilha discreta desenha de 0° a 360°,
-        // ease-in-out.
+        // cubic-bezier(0.65,0,0.35,1): lento no começo, acelera no meio,
+        // desacelera no fim.
         enter($ringLayer)
-        withAnimation(anim(.easeInOut(duration: Double(ChefLoadingConfig.stage4ProgressMs) / 1000))) {
+        withAnimation(anim(ChefLoadingConfig.progressEasing(ChefLoadingConfig.stage4ProgressMs))) {
             ringTrim = 1.0
         }
         await sleep(ChefLoadingConfig.stage4ProgressMs)
 
         // 5 · conclusão — o anel sai e o check entra (troca pareada, com
         // sobreposição no meio); o fundo do círculo vira a cor de destaque
-        // em crossfade rápido com blur; o check desenha o traço.
+        // em crossfade rápido com blur; o check desenha o traço. Depois,
+        // uma pausa (stage5HoldMs) deixa a conclusão "respirar" antes de
+        // começar a voltar.
         swap(out: $ringLayer, in: $checkLayer)
-        withAnimation(anim(.easeInOut(duration: Double(ChefLoadingConfig.stage5CompletionMs) / 1000))) {
+        withAnimation(anim(ChefLoadingConfig.fadeOutEasing(ChefLoadingConfig.stage5CompletionMs))) {
             containerFill = Color.chefPrimary
         }
         pulseMotionBlur()
-        withAnimation(anim(.easeOut(duration: Double(ChefLoadingConfig.stage5CompletionMs) / 1000))) {
+        withAnimation(anim(ChefLoadingConfig.fadeInEasing(ChefLoadingConfig.stage5CompletionMs))) {
             checkTrim = 1.0
         }
         Haptics.success()
         await sleep(ChefLoadingConfig.stage5CompletionMs)
+        await sleep(ChefLoadingConfig.stage5HoldMs)
 
         // 6 · retorno — o check sai e o ícone volta a entrar (outra troca
         // pareada); o container volta a ser o quadrado; um badge de check
-        // faz pop no canto da folha na segunda metade da etapa.
+        // faz pop no canto da folha. Depois, outra pausa (stage6HoldMs)
+        // antes da saída final.
         swap(out: $checkLayer, in: $iconLayer)
-        withAnimation(anim(ChefLoadingConfig.containerSpring)) {
+        withAnimation(anim(ChefLoadingConfig.shapeSpring)) {
             containerSide = ChefLoadingConfig.squareSide
             containerCornerRadius = ChefLoadingConfig.squareCornerRadius
             containerOutlineOpacity = 1
             containerFill = ChefLoadingConfig.containerBackground
         }
         pulseMotionBlur()
-        await sleep(ChefLoadingConfig.stage6ReturnMs / 2)
+        await sleep(ChefLoadingConfig.stage6ReturnMs)
         showBadge = true
-        withAnimation(anim(.interpolatingSpring(mass: 1, stiffness: 400, damping: 14))) {
+        withAnimation(anim(ChefLoadingConfig.popSpring)) {
             badgeScale = 1.15
         }
         await sleep(120)
-        withAnimation(anim(.easeOut(duration: 0.15))) {
+        withAnimation(anim(ChefLoadingConfig.fadeOutEasing(150))) {
             badgeScale = 1.0
         }
-        await sleep(ChefLoadingConfig.stage6ReturnMs / 2 - 120)
+        await sleep(ChefLoadingConfig.stage6HoldMs - 120)
 
-        // 7 · saída — o container expande cobrindo a tela (motion blur
-        // leve) na primeira metade da etapa; o ícone some com blur junto;
-        // na segunda metade, a home aparece por baixo com fade. Tudo dentro
-        // da janela de stage7ExitMs, pra bater com os ~2,6s totais do spec
-        // em vez de somar mais tempo depois.
+        // 7 · saída — o container expande cobrindo a tela (spring mais
+        // solto, `expandSpring`, e motion blur leve) na primeira metade da
+        // etapa; o ícone some com blur junto; na segunda metade, a home
+        // aparece por baixo com fade. Tudo dentro da janela de
+        // stage7ExitMs, sem somar duração extra depois.
         let exitHalf = ChefLoadingConfig.stage7ExitMs / 2
-        withAnimation(anim(ChefLoadingConfig.containerSpring)) {
-            containerSide = ChefLoadingConfig.fullscreenCoverSide
-            containerCornerRadius = 0
+        // Cresce a partir do tamanho real da tela (não um valor fixo
+        // gigantesco) — só assim o `screenCornerRadius` fica proporcional o
+        // bastante pra ler como "virou a borda da tela", em vez de sumir
+        // num quadrado absurdamente maior que qualquer aparelho.
+        let screenBounds = UIScreen.main.bounds
+        let coverSide = max(screenBounds.width, screenBounds.height) * ChefLoadingConfig.fullscreenOverscanFactor
+        withAnimation(anim(ChefLoadingConfig.expandSpring)) {
+            containerSide = coverSide
+            containerCornerRadius = ChefLoadingConfig.screenCornerRadius
         }
         exit($iconLayer)
         pulseMotionBlur()
         await sleep(exitHalf)
 
-        withAnimation(anim(.easeInOut(duration: Double(exitHalf) / 1000))) {
+        withAnimation(anim(ChefLoadingConfig.fadeOutEasing(exitHalf))) {
             overallOpacity = 0
         }
         await sleep(exitHalf)
@@ -298,7 +310,7 @@ struct ChefLoadingView: View {
     /// (estágios 3 e 7 — o ícone só some, o conteúdo seguinte aparece numa
     /// etapa posterior).
     private func exit(_ layer: Binding<LayerState>) {
-        withAnimation(anim(.easeIn(duration: Double(ChefLoadingConfig.crossfadeOutMs) / 1000))) {
+        withAnimation(anim(ChefLoadingConfig.fadeOutEasing(ChefLoadingConfig.crossfadeOutMs))) {
             layer.wrappedValue.opacity = 0
             layer.wrappedValue.blur = ChefLoadingConfig.crossfadeBlur
             layer.wrappedValue.scale = ChefLoadingConfig.crossfadeScale
@@ -309,7 +321,7 @@ struct ChefLoadingView: View {
     /// (estágio 4 — o anel aparece num círculo já vazio).
     private func enter(_ layer: Binding<LayerState>) {
         layer.wrappedValue = LayerState(opacity: 0, blur: ChefLoadingConfig.crossfadeBlur, scale: ChefLoadingConfig.crossfadeScale)
-        withAnimation(anim(.easeOut(duration: Double(ChefLoadingConfig.crossfadeInMs) / 1000))) {
+        withAnimation(anim(ChefLoadingConfig.fadeInEasing(ChefLoadingConfig.crossfadeInMs))) {
             layer.wrappedValue.opacity = 1
             layer.wrappedValue.blur = 0
             layer.wrappedValue.scale = 1
@@ -331,12 +343,12 @@ struct ChefLoadingView: View {
     /// mudança grande de tamanho/cor do container — simula motion blur sem
     /// custar caro (só anima `blur(radius:)`, que já é leve no Metal).
     private func pulseMotionBlur() {
-        withAnimation(anim(.easeOut(duration: 0.08))) {
+        withAnimation(anim(ChefLoadingConfig.fadeOutEasing(80))) {
             containerBlur = ChefLoadingConfig.motionBlurAmount
         }
         Task {
             await sleep(80)
-            withAnimation(anim(.easeIn(duration: 0.12))) {
+            withAnimation(anim(ChefLoadingConfig.fadeInEasing(120))) {
                 containerBlur = 0
             }
         }
