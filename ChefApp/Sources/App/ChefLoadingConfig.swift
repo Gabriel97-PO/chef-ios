@@ -27,10 +27,11 @@ enum ChefLoadingConfig {
     /// pra cobrir cantos e notch sem precisar de `GeometryReader`, mas sem
     /// exagerar a ponto do `screenCornerRadius` sumir na escala.
     static let fullscreenOverscanFactor: CGFloat = 1.15
-    /// Não vem do protótipo de referência (que não expõe o glifo
-    /// separado do container) — mantém a mesma proporção de margem interna
-    /// já calibrada visualmente antes.
-    static let iconContentSize: CGFloat = squareSide * 0.72
+    /// Igual ao container de propósito: as formas de `ChefMark.swift` estão
+    /// no espaço 1024×1024 do ícone do app (margem interna já inclusa),
+    /// então um frame do tamanho do container reproduz a mesma composição
+    /// do ícone real na tela inicial.
+    static let iconContentSize: CGFloat = squareSide
 
     // MARK: - Durações de cada etapa (ms)
 
@@ -131,6 +132,14 @@ enum ChefLoadingConfig {
     static let containerOutline = dynamicColor(
         light: (0xA0, 0x9B, 0x93),
         dark: (0x56, 0x56, 0x56)
+    )
+
+    /// Pregas do chapéu, seguindo cada versão do ícone real: no claro são
+    /// relevo quase branco (um cinza bem leve pra ler sobre o container
+    /// branco); no escuro são Volt Green, o mesmo #CCFF00 do `chefPrimary`.
+    static let iconPleats = dynamicColor(
+        light: (0xE6, 0xE4, 0xE0),
+        dark: (0xCC, 0xFF, 0x00)
     )
 
     /// Cor do check grande e do glifo do badge — contraste sobre a cor de

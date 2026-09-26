@@ -24,43 +24,17 @@ Arquivos:
 
 A mecânica de animação (morph do container, crossfade com blur entre camadas de conteúdo, springs, curvas de tempo) já foi validada pelo usuário e está funcionando como esperado.
 
-## Tarefa pendente: o ícone dentro da splash ainda é o design antigo
+## Ícone dentro da splash (resolvido em 26/set/2026)
 
-Confirmado pelo usuário: a animação em si está funcionando bem, mas o ícone desenhado dentro do container (chapéu, faixa da base e folha) ainda usa o design antigo, não o design novo do chapéu que já está valendo no ícone real do app.
+O ícone desenhado dentro do container da splash agora usa a mesma arte definitiva do ícone real do app (opção 1 da análise anterior: redesenhar as formas vetoriais).
 
-### Onde está o problema
-
-- O ícone real do app (o que aparece na tela inicial do iPhone) já foi atualizado com a arte definitiva do designer: `ChefApp/Resources/Assets.xcassets/AppIcon.appiconset/icon-light-1024.png` e `icon-dark-1024.png` (já commitados no repositório). Esse design tem o contorno inteiro do chapéu em laranja/Volt Green, não só um contorno sutil como a versão antiga.
-- A splash, porém, desenha o ícone através de três `Shape` procedurais (paths desenhados à mão em coordenadas Bézier), definidos em `ChefApp/Sources/DesignSystem/ChefMark.swift`: `ChefHatShape`, `ChefStripeShape`, `ChefLeafShape`. Esses paths são uma aproximação vetorial antiga, criada antes de existirem as imagens de referência definitivas do designer, e não batem com a geometria do ícone atual.
-- `ChefLoadingView.swift` usa essas mesmas três `Shape` na propriedade computada `iconContent`. Por isso, o ícone animado dentro da splash continua parecendo o design antigo mesmo depois do ícone real do app já ter sido corrigido.
-
-### Por que não é um ajuste trivial
-
-A splash precisa que o ícone seja separável em pelo menos duas partes que animam de forma independente:
-
-1. A folha, que inclina (variável `leafRotation`) durante a etapa de ativação.
-2. A faixa da base, que "brilha" (variável `stripeGlow`, uma sombra que pulsa) na mesma etapa.
-
-Além disso, o ícone precisa recolorir sozinho entre os temas claro e escuro (laranja `#FF7A00` / Volt Green `#CCFF00`), sem precisar de duas imagens coladas manualmente.
-
-Isso é simples com `Shape` vetorial (preenche com `Color.chefPrimary`, que já é dinâmica por tema), mas fica difícil com uma imagem raster estática (PNG), porque:
-
-- Uma imagem PNG não anima "só a folha" a menos que a folha seja um arquivo separado, isolado do resto do desenho.
-- Recolorir uma imagem PNG exige duas versões prontas (uma clara, uma escura) ou usar `.renderingMode(.template)` com uma máscara monocromática, o que só funciona se a arte for uma silhueta sólida, sem gradiente nem sombra interna.
-
-### Opções pra resolver (decidir com o Gabriel antes de implementar)
-
-1. Retraçar os paths de `ChefHatShape`, `ChefStripeShape` e `ChefLeafShape` em `ChefMark.swift` pra bater com a geometria do ícone novo. Mantém toda a flexibilidade de animação e recoloração por tema, mas exige trabalho manual de precisão pra copiar a arte do designer em coordenadas Bézier.
-2. Pedir pro designer exportar o novo desenho em camadas separadas (chapéu, faixa, folha), cada uma como uma máscara monocromática com fundo transparente, e usar `Image(...).renderingMode(.template).foregroundStyle(Color.chefPrimary)` no lugar de `Shape`. Mantém a animação por partes, mas depende de assets em camadas preparados assim (a arte atual, de origem, não veio separada).
-3. Simplificar a splash pra não depender de sub-partes animadas: usar a imagem raster inteira (`icon-light-1024` / `icon-dark-1024`) como um bloco único, e trocar a animação da folha/faixa por algo que anime o ícone inteiro (por exemplo, leve escala ou sombra pulsando). Perde a nuance da folha/faixa animando sozinhas, mas ganha fidelidade visual imediata sem trabalho de retraçado.
-
-Recomendação: a opção 1 é provavelmente a melhor a longo prazo (preserva tudo que já funciona), mas exige mais cuidado na precisão visual do retraçado. Vale confirmar com o Gabriel qual caminho ele prefere antes de começar a implementação.
-
-### Arquivos envolvidos
-
-- `ChefApp/Sources/DesignSystem/ChefMark.swift`: as formas vetoriais antigas que precisam ser atualizadas ou substituídas.
-- `ChefApp/Sources/App/ChefLoadingView.swift`: usa essas formas na splash, na propriedade `iconContent`.
-- `ChefApp/Resources/Assets.xcassets/AppIcon.appiconset/icon-light-1024.png` e `icon-dark-1024.png`: a arte definitiva já usada no ícone real do app, serve de referência visual pra qualquer uma das opções acima.
+- `ChefApp/Sources/DesignSystem/ChefMark.swift` tem quatro `Shape`s: `ChefHatShape` (contorno do chapéu), `ChefPleatsShape` (as 3 pregas), `ChefStripeShape` (faixa curva da base) e `ChefLeafShape` (folha com nervura e cabo).
+- A geometria não foi desenhada à mão: é o contorno de cada traço de `icon-dark-1024.png`, vetorizado automaticamente (contorno com precisão de subpixel, suavizado, simplificado com tolerância de 0,8px, cobrindo ~97,6% dos pixels da arte). São polígonos preenchidos, não `stroke`, porque a espessura do traço varia ao longo do desenho.
+- As coordenadas estão no espaço 1024×1024 do ícone, e o frame do ícone na splash (`iconContentSize`) é igual ao container, então a composição bate com o ícone real.
+- Se a arte do ícone mudar de novo, gerar os pontos de novo a partir do PNG novo (mesmo processo: máscara da cor de destaque, componentes conectados, contorno, simplificação), em vez de ajustar na mão.
+- As pregas usam uma cor própria por tema (`ChefLoadingConfig.iconPleats`), porque no ícone claro elas são relevo quase branco e no escuro são Volt Green.
+- Na ativação, só a folha inclina (pivô na ponta do cabo, `ChefLeafShape.stemAnchor`). Antes a faixa girava junto com a folha. Agora a faixa fica parada e só brilha.
+- Pendente: validar no aparelho, pela tela "Pré-visualizar splash", nos dois temas.
 
 ## Outras notas úteis pra continuar
 

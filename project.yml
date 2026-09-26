@@ -50,7 +50,7 @@ targets:
         # notificação continuava mostrando a versão antiga mesmo depois do
         # ícone já estar certo no bundle). Incrementar aqui a cada release
         # força o iOS a tratar como build novo de verdade.
-        CURRENT_PROJECT_VERSION: "2"
+        CURRENT_PROJECT_VERSION: "3"
         ENABLE_PREVIEWS: YES
 
   ChefTests:

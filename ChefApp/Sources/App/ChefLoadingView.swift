@@ -104,19 +104,18 @@ struct ChefLoadingView: View {
 
     private var iconContent: some View {
         ZStack {
-            ZStack {
-                ChefHatShape().scale(1.055).fill(Color.chefPrimary)
-                ChefHatShape().fill(Color.chefFigure)
-            }
-
-            ZStack {
-                ChefStripeShape()
-                    .fill(Color.chefPrimary)
-                    .shadow(color: Color.chefPrimary.opacity(stripeGlow), radius: 10)
-                ChefLeafShape()
-                    .stroke(Color.chefPrimary, style: StrokeStyle(lineWidth: 5, lineCap: .round, lineJoin: .round))
-            }
-            .rotationEffect(.degrees(leafRotation), anchor: UnitPoint(x: 0.70, y: 0.91))
+            ChefHatShape()
+                .fill(Color.chefPrimary)
+            ChefPleatsShape()
+                .fill(ChefLoadingConfig.iconPleats)
+            ChefStripeShape()
+                .fill(Color.chefPrimary)
+                .shadow(color: Color.chefPrimary.opacity(stripeGlow), radius: 10)
+            // Só a folha inclina, girando em torno da ponta do cabo; a faixa
+            // fica parada e só brilha.
+            ChefLeafShape()
+                .fill(Color.chefPrimary)
+                .rotationEffect(.degrees(leafRotation), anchor: ChefLeafShape.stemAnchor)
         }
         .frame(width: ChefLoadingConfig.iconContentSize, height: ChefLoadingConfig.iconContentSize)
     }
