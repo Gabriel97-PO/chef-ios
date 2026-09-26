@@ -99,7 +99,7 @@ final class ScreenshotUITests: XCTestCase {
     /// splash não é um elemento de acessibilidade — o XCUITest não percebe
     /// que ele está bloqueando o toque, então `isHittable` dá falso positivo
     /// antes da animação acabar. A duração da sequência é 100% determinística
-    /// (soma dos `sleep` em `ChefLoadingView.runSequence`, ~3.4s), então uma
+    /// (soma dos `sleep` em `ChefLoadingView.runSequence`, ~2,85s), então uma
     /// espera fixa com folga é mais confiável que tentar inferir pela UI.
     private func waitForSplash(_ app: XCUIApplication) {
         _ = app.buttons["Hoje"].waitForExistence(timeout: 8)
