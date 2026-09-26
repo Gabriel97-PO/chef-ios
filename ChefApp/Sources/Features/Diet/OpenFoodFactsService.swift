@@ -37,11 +37,13 @@ enum OpenFoodFactsService {
     /// world.openfoodfacts.org devolve 503 de forma intermitente sob carga
     /// (~1 em cada 2-3 chamadas em rajada) — não é problema de rede local,
     /// de simulador nem de decodificação, é a instabilidade normal desse
-    /// serviço (mantido sem fins lucrativos). Uma segunda tentativa quase
-    /// sempre resolve, então tenta de novo antes de desistir em vez de
-    /// mostrar erro pra uma falha que passa sozinha em menos de 1s.
-    private static let maxAttempts = 3
-    private static let retryDelaysMs: [UInt64] = [300, 700]
+    /// serviço (mantido sem fins lucrativos). 3 tentativas ainda deixavam
+    /// uma falha tripla acontecer de vez em quando (visto no CI - 3 em
+    /// linha, ~3s de janela); 5 tentativas com backoff crescente reduz
+    /// bastante a chance de esgotar todas numa rajada ruim, sem deixar o
+    /// usuário esperando muito além do que já esperava em 3.
+    private static let maxAttempts = 5
+    private static let retryDelaysMs: [UInt64] = [250, 500, 800, 1200]
 
     static func search(_ query: String) async throws -> [NetworkFoodResult] {
         var lastError: Error = OpenFoodFactsError.network
